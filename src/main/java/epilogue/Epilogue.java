@@ -112,7 +112,7 @@ public class Epilogue {
         moduleManager.modules.put(NoRotate.class, new NoRotate());
         moduleManager.modules.put(NoSlow.class, new NoSlow());
         moduleManager.modules.put(NoSlow2.class, new NoSlow2());
-        moduleManager.modules.put(NotificationDisplay.class, new NotificationDisplay());
+        moduleManager.modules.put(Notification.class, new Notification());
         moduleManager.modules.put(PotionEffects.class, new PotionEffects());
         moduleManager.modules.put(PostProcessing.class, new PostProcessing());
         moduleManager.modules.put(PartySpammer.class, new PartySpammer());

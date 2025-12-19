@@ -50,28 +50,6 @@ public class Config {
             
             JsonObject jsonObject = parsed.getAsJsonObject();
             
-            JsonElement guiObj = jsonObject.get("ClickGUI");
-            if (guiObj != null && guiObj.isJsonObject()) {
-                JsonObject guiObject = guiObj.getAsJsonObject();
-                JsonElement posX = guiObject.get("posX");
-                JsonElement posY = guiObject.get("posY");
-                JsonElement width = guiObject.get("width");
-                JsonElement height = guiObject.get("height");
-                
-                if (posX != null && posX.isJsonPrimitive()) {
-                    epilogue.ui.clickgui.augustus.AugustusClickGui.lastPosX = posX.getAsFloat();
-                }
-                if (posY != null && posY.isJsonPrimitive()) {
-                    epilogue.ui.clickgui.augustus.AugustusClickGui.lastPosY = posY.getAsFloat();
-                }
-                if (width != null && width.isJsonPrimitive()) {
-                    epilogue.ui.clickgui.augustus.AugustusClickGui.lastWidth = width.getAsFloat();
-                }
-                if (height != null && height.isJsonPrimitive()) {
-                    epilogue.ui.clickgui.augustus.AugustusClickGui.lastHeight = height.getAsFloat();
-                }
-            }
-            
             for (Module module : Epilogue.moduleManager.modules.values()) {
                 JsonElement moduleObj = jsonObject.get(module.getName());
                 if (moduleObj != null && moduleObj.isJsonObject()) {
@@ -128,14 +106,7 @@ public class Config {
             }
             
             JsonObject object = new JsonObject();
-            
-            JsonObject guiObject = new JsonObject();
-            guiObject.addProperty("posX", epilogue.ui.clickgui.augustus.AugustusClickGui.lastPosX);
-            guiObject.addProperty("posY", epilogue.ui.clickgui.augustus.AugustusClickGui.lastPosY);
-            guiObject.addProperty("width", epilogue.ui.clickgui.augustus.AugustusClickGui.lastWidth);
-            guiObject.addProperty("height", epilogue.ui.clickgui.augustus.AugustusClickGui.lastHeight);
-            object.add("ClickGUI", guiObject);
-            
+
             for (Module module : Epilogue.moduleManager.modules.values()) {
                 JsonObject moduleObject = new JsonObject();
                 moduleObject.addProperty("toggled", module.isEnabled());

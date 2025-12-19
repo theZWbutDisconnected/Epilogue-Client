@@ -39,7 +39,9 @@ public class ModeComponent extends SettingComponent<ModeValue> {
             }
         }
         double animation = openAnimation.getOutput();
-        countSize = (float) (1 + (rectCount * rectHeight / 20f * animation));
+        float baseHeight = 10 + 1 + 12 + 2;
+        float expandedHeight = rectCount * rectHeight;
+        countSize = (float) ((baseHeight / 20f) + (expandedHeight / 20f * animation));
     }
 
     @Override
@@ -51,8 +53,8 @@ public class ModeComponent extends SettingComponent<ModeValue> {
         float nameHeight = 10;
         float boxHeight = 12;
         float boxY = y + nameHeight + 1;
-        float boxX = x + 4;
-        float boxWidth = width - 8;
+        float boxX = x + 2;
+        float boxWidth = width - 4;
 
         boolean hoveringBox = isHovering(boxX, boxY, boxWidth, boxHeight, mouseX, mouseY);
 
@@ -122,8 +124,8 @@ public class ModeComponent extends SettingComponent<ModeValue> {
         float nameHeight = 10;
         float boxHeight = 12;
         float boxY = y + nameHeight + 1;
-        float boxX = x + 4;
-        float boxWidth = width - 8;
+        float boxX = x + 2;
+        float boxWidth = width - 4;
 
         if (isClickable(boxY + boxHeight) && isHovering(boxX, boxY, boxWidth, boxHeight, mouseX, mouseY) && button == 1) {
             opened = !opened;

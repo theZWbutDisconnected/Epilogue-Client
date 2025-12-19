@@ -72,7 +72,7 @@ public class CategoryPanel {
             return;
         }
 
-        float alpha = (float) Math.min(1, fadeAnimation.getOutput());
+        float alpha = fadeAnimation == null ? 1.0f : (float) Math.min(1, fadeAnimation.getOutput());
         float alphaValue = alpha * 0.4f;
 
         float x = drag.getX();

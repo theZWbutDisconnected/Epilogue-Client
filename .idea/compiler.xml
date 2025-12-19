@@ -6,18 +6,8 @@
         <outputRelativeToContentRoot value="true" />
         <option name="defaultObfuscationEnv" value="named:intermediary" />
         <option name="inMapFileNamedIntermediary" value="C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
-        <option name="outMapFileNamedIntermediary" value="D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.1.tiny" />
-        <option name="outRefMapFile" value="D:\Java\Project\Epilo-Client\build\classes\java\main\mixins.epilo.refmap.json" />
-        <processorPath useClasspath="false">
-          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.spongepowered/mixin/0.8.5-SNAPSHOT/afd548f754a72df63a853c0cc1d064b6fcf76441/mixin-0.8.5-SNAPSHOT.jar" />
-        </processorPath>
-      </profile>
-      <profile name="Gradle Imported" enabled="true">
-        <outputRelativeToContentRoot value="true" />
-        <option name="defaultObfuscationEnv" value="named:intermediary" />
-        <option name="inMapFileNamedIntermediary" value="C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
-        <option name="outMapFileNamedIntermediary" value="D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.0.tiny" />
-        <option name="outRefMapFile" value="D:\Java\Project\Epilo-Client\build\classes\java\main\mixins.epilogue.refmap.json" />
+        <option name="outMapFileNamedIntermediary" value="D:\Java\Project\Epilogue-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.0.tiny" />
+        <option name="outRefMapFile" value="D:\Java\Project\Epilogue-Client\build\classes\java\main\mixins.epilogue.refmap.json" />
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.spongepowered/mixin/0.8.5-SNAPSHOT/afd548f754a72df63a853c0cc1d064b6fcf76441/mixin-0.8.5-SNAPSHOT.jar" />
         </processorPath>
@@ -27,10 +17,10 @@
     <bytecodeTargetLevel target="1.8" />
   </component>
   <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_STRING" value="-AoutRefMapFile=D:\Java\Project\Epilo-Client\build\classes\java\main\mixins.epilogue.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.0.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-AoutRefMapFile=D:\Java\Project\Epilogue-Client\build\classes\java\main\mixins.epilogue.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilogue-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.0.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="epilo.test" options="-AoutRefMapFile=D:\Java\Project\Epilo-Client\build\classes\java\test\mixins.epilo.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.0.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
-      <module name="epilogue.test" options="-AoutRefMapFile=D:\Java\Project\Epilo-Client\build\classes\java\test\mixins.epilogue.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.1.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
+      <module name="epilogue.test" options="-AoutRefMapFile=D:\Java\Project\Epilogue-Client\build\classes\java\test\mixins.epilogue.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilogue-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.1.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
       <module name="nightsky.test" options="-AoutRefMapFile=D:\Java\Project\Epilo-Client\build\classes\java\test\mixins.nightsky.refmap.json -AdefaultObfuscationEnv=named:intermediary -AoutMapFileNamedIntermediary=D:\Java\Project\Epilo-Client\build\loom-cache\mixin-map-de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9.1.tiny -AinMapFileNamedIntermediary=C:\Users\Tliortys_1337\.gradle\caches\essential-loom\1.8.9\de.oceanlabs.mcp.mcp_stable.1_8_9.22-1.8.9-forge-1.8.9-11.15.1.2318-1.8.9\mappings-mixin-srg.tiny" />
     </option>
   </component>

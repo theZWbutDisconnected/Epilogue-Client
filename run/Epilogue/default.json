@@ -1,10 +1,4 @@
 {
-  "ClickGUI": {
-    "toggled": false,
-    "key": 54,
-    "hidden": false,
-    "Mode": "Augustus"
-  },
   "AimAssist": {
     "toggled": false,
     "key": 0,
@@ -225,6 +219,12 @@
     "hidden": false,
     "BackgroundAlpha": 120
   },
+  "ClickGUI": {
+    "toggled": false,
+    "key": 54,
+    "hidden": false,
+    "Mode": "Dropdown"
+  },
   "DynamicIsland": {
     "toggled": true,
     "key": 0,
@@ -337,7 +337,7 @@
     "Color Mode": "Fade",
     "Speed": 2.0,
     "Main Color": "80FF95",
-    "Second Color": "80FFFF",
+    "Second Color": "00FFFF",
     "Offset": 5.0,
     "Index": 107.0,
     "ToggleSound": "Vanilla"
@@ -829,10 +829,9 @@
     "hidden": false
   },
   "WaterMark": {
-    "toggled": false,
+    "toggled": true,
     "key": 0,
     "hidden": false,
-    "Scale": 5.0,
     "Mode": "Exhibition"
   },
   "WTap": {
