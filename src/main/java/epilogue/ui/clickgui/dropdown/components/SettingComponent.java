@@ -20,6 +20,24 @@ public abstract class SettingComponent<T extends Value> {
         this.setting = setting;
     }
 
+    protected void applyValueChange(Object value) {
+        if (value == null) {
+            this.setting.parseString(null);
+            return;
+        }
+        boolean changed = false;
+        try {
+            changed = this.setting.parseString(String.valueOf(value));
+        } catch (Exception ignored) {
+        }
+        if (!changed) {
+            try {
+                this.setting.setValue(value);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     public T getSetting() {
         return setting;
     }

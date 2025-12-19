@@ -9,6 +9,7 @@ import epilogue.util.render.animations.advanced.impl.DecelerateAnimation;
 import epilogue.value.Value;
 import epilogue.value.values.FloatValue;
 import epilogue.value.values.IntValue;
+import epilogue.value.values.PercentValue;
 
 import java.awt.*;
 
@@ -40,6 +41,7 @@ public class NumberComponent extends SettingComponent {
         double min = 0;
         double max = 100;
         double increment = 1;
+        boolean percent = false;
 
         if (getSetting() instanceof FloatValue) {
             FloatValue fv = (FloatValue) getSetting();
@@ -47,6 +49,13 @@ public class NumberComponent extends SettingComponent {
             min = fv.getMinimum();
             max = fv.getMaximum();
             increment = 0.1;
+        } else if (getSetting() instanceof PercentValue) {
+            PercentValue pv = (PercentValue) getSetting();
+            value = pv.getValue();
+            min = pv.getMinimum();
+            max = pv.getMaximum();
+            increment = 1;
+            percent = true;
         } else if (getSetting() instanceof IntValue) {
             IntValue iv = (IntValue) getSetting();
             value = iv.getValue();
@@ -56,6 +65,7 @@ public class NumberComponent extends SettingComponent {
         }
 
         String valueStr = String.format("%.2f", value).replaceAll("0*$", "").replaceAll("\\.$", "");
+        if (percent) valueStr = valueStr + "%";
 
         float sliderX = x + 5;
         float sliderWidth = width - 10;
@@ -78,14 +88,16 @@ public class NumberComponent extends SettingComponent {
         net.minecraft.client.gui.Gui.drawRect((int)sliderX, (int)sliderY, (int)(sliderX + sliderWidth), (int)(sliderY + sliderHeight), bgColor.getRGB());
 
         if (dragging) {
-            float percent = Math.min(1, Math.max(0, (mouseX - sliderX) / sliderWidth));
-            double newValue = min + (max - min) * percent;
+            float percent1 = Math.min(1, Math.max(0, (mouseX - sliderX) / sliderWidth));
+            double newValue = min + (max - min) * percent1;
             newValue = Math.round(newValue / increment) * increment;
             
             if (getSetting() instanceof FloatValue) {
-                ((FloatValue) getSetting()).setValue((float) newValue);
+                applyValueChange((float) newValue);
+            } else if (getSetting() instanceof PercentValue) {
+                applyValueChange((int) newValue);
             } else if (getSetting() instanceof IntValue) {
-                ((IntValue) getSetting()).setValue((int) newValue);
+                applyValueChange((int) newValue);
             }
         }
 

@@ -24,13 +24,13 @@ public class AutoClicker extends Module {
     private long clickDelay = 0L;
     private boolean blockHitPending = false;
     private long blockHitDelay = 0L;
-    public final IntValue minCPS = new IntValue("MinCps", 8, 1, 20);
-    public final IntValue maxCPS = new IntValue("MaxCps", 12, 1, 20);
-    public final BooleanValue blockHit = new BooleanValue("BlockHit", false);
-    public final FloatValue blockHitTicks = new FloatValue("BlockHitTicks", 1.5F, 1.0F, 20.0F, this.blockHit::getValue);
-    public final BooleanValue weaponsOnly = new BooleanValue("WeaponsOnly", true);
-    public final BooleanValue allowTools = new BooleanValue("AllowTools", false, this.weaponsOnly::getValue);
-    public final BooleanValue breakBlocks = new BooleanValue("BreakBlocks", true);
+    public final IntValue minCPS = new IntValue("Min Cps", 8, 1, 20);
+    public final IntValue maxCPS = new IntValue("Max Cps", 12, 1, 20);
+    public final BooleanValue blockHit = new BooleanValue("AutoBlockIn Hit", false);
+    public final FloatValue blockHitTicks = new FloatValue("AutoBlockIn HitT icks", 1.5F, 1.0F, 20.0F, this.blockHit::getValue);
+    public final BooleanValue weaponsOnly = new BooleanValue("Weapons Only", true);
+    public final BooleanValue allowTools = new BooleanValue("Allow Tools", false, this.weaponsOnly::getValue);
+    public final BooleanValue breakBlocks = new BooleanValue("Break Blocks", true);
     private long getNextClickDelay() {
         return 1000L / RandomUtil.nextLong(this.minCPS.getValue().intValue(), this.maxCPS.getValue().intValue());
     }

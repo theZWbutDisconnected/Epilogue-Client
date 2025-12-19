@@ -17,8 +17,8 @@ public class AutoTool extends Module {
     private int previousSlot = -1;
     private int tickDelayCounter = 0;
     public final IntValue switchDelay = new IntValue("Delay", 0, 0, 5);
-    public final BooleanValue switchBack = new BooleanValue("SwitchBack", true);
-    public final BooleanValue sneakOnly = new BooleanValue("SneakOnly", true);
+    public final BooleanValue switchBack = new BooleanValue("Switch Back", true);
+    public final BooleanValue sneakOnly = new BooleanValue("Only Sneak", true);
 
     public AutoTool() {
         super("AutoTool", false);

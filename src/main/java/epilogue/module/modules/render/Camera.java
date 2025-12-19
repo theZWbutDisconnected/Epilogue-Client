@@ -6,7 +6,7 @@ import epilogue.value.values.BooleanValue;
 //hyw。 没错就是一个很ez的smooth。
 public class Camera extends Module {
     public final FloatValue smoothness = new FloatValue("Smoothness", 0.05f, 0.01f, 0.1f);
-    public final BooleanValue onlyThirdPerson = new BooleanValue("OnlyThirdPerson", true);
+    public final BooleanValue onlyThirdPerson = new BooleanValue("Only Third Person", true);
     
     private double smoothX = 0.0;
     private double smoothY = 0.0;

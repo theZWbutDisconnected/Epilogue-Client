@@ -140,7 +140,7 @@ public class ModeComponent extends SettingComponent<ModeValue> {
                 if (mode.equals(modeSetting.getModeString())) continue;
                 boolean hoveringMode = isHovering(modeX, modeY + rectCount * rectHeight, boxWidth, rectHeight, mouseX, mouseY);
                 if (isClickable((modeY + rectCount * rectHeight) + rectHeight) && hoveringMode && button == 0) {
-                    modeSetting.parseString(mode);
+                    applyValueChange(mode);
                     opened = false;
                     return;
                 }

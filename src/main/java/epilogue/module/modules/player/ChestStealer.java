@@ -30,13 +30,13 @@ public class ChestStealer extends Module {
     private boolean inChest = false;
     private boolean warnedFull = false;
 
-    public final IntValue minDelay = new IntValue("MinDelay", 0, 0, 20);
-    public final IntValue maxDelay = new IntValue("MaxDelay", 0, 0, 20);
-    public final IntValue openDelay = new IntValue("OpenDelay", 0, 0, 20);
+    public final IntValue minDelay = new IntValue("Min Delay", 0, 0, 20);
+    public final IntValue maxDelay = new IntValue("Max Delay", 0, 0, 20);
+    public final IntValue openDelay = new IntValue("Open Delay", 0, 0, 20);
     public final ModeValue mode = new ModeValue("Mode", 1, new String[]{"Normal", "Instant"});
-    public final BooleanValue autoClose = new BooleanValue("AutoClose", true);
-    public final BooleanValue nameCheck = new BooleanValue("NameCheck", true);
-    public final BooleanValue skipTrash = new BooleanValue("SkipTrash", true);
+    public final BooleanValue autoClose = new BooleanValue("Auto Close", true);
+    public final BooleanValue nameCheck = new BooleanValue("Check Name", true);
+    public final BooleanValue skipTrash = new BooleanValue("Skip Trash", true);
 
     private boolean isValidGameMode() {
         GameType gameType = mc.playerController.getCurrentGameType();

@@ -132,7 +132,7 @@ public class ColorComponent extends SettingComponent<ColorValue> {
                         ColorUtil.applyOpacity(firstColor, alpha).getRGB());
                 }
 
-                colorSetting.setValue(Color.HSBtoRGB(hue, saturation, brightness));
+                applyValueChange(Color.HSBtoRGB(hue, saturation, brightness));
             }
         }
     }

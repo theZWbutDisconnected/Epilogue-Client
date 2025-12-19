@@ -3,7 +3,7 @@ package epilogue.mixin;
 import epilogue.Epilogue;
 import epilogue.event.EventManager;
 import epilogue.events.Render2DEvent;
-import epilogue.module.modules.misc.NickHider;
+import epilogue.module.modules.misc.Nick;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraftforge.client.GuiIngameForge;
 import net.minecraftforge.fml.relauncher.Side;
@@ -41,7 +41,7 @@ public abstract class MixinGuiIngameForge {
         if (Epilogue.moduleManager == null) {
             return entityPlayerSP.experience;
         } else {
-            NickHider event = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
+            Nick event = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
             return event.isEnabled() && event.level.getValue() ? 0.0F : entityPlayerSP.experience;
         }
     }
@@ -57,7 +57,7 @@ public abstract class MixinGuiIngameForge {
         if (Epilogue.moduleManager == null) {
             return entityPlayerSP.experienceLevel;
         } else {
-            NickHider event = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
+            Nick event = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
             return event.isEnabled() && event.level.getValue() ? 0 : entityPlayerSP.experienceLevel;
         }
     }

@@ -24,7 +24,7 @@ public class AutoHeal extends Module {
     private int prevSlot = -1;
     public final PercentValue health = new PercentValue("Health", 35);
     public final IntValue delay = new IntValue("Delay", 4000, 0, 5000);
-    public final BooleanValue regenCheck = new BooleanValue("RegenCheck", false);
+    public final BooleanValue regenCheck = new BooleanValue("Regen Check", false);
 
     private int findHealingItem() {
         for (int i = 0; i < 9; i++) {

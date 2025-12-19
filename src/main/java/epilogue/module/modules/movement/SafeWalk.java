@@ -17,12 +17,12 @@ import net.minecraft.client.Minecraft;
 public class SafeWalk extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     public final FloatValue motion = new FloatValue("Motion", 1.0F, 0.5F, 1.0F);
-    public final FloatValue speedMotion = new FloatValue("SpeedMotion", 1.0F, 0.5F, 1.5F);
-    public final BooleanValue air = new BooleanValue("Air", false);
-    public final BooleanValue directionCheck = new BooleanValue("DirectionCheck", true);
-    public final BooleanValue pitCheck = new BooleanValue("PitchCheck", true);
-    public final BooleanValue requirePress = new BooleanValue("RequirePress", false);
-    public final BooleanValue blocksOnly = new BooleanValue("BlocksOnly", true);
+    public final FloatValue speedMotion = new FloatValue("Speed Motion", 1.0F, 0.5F, 1.5F);
+    public final BooleanValue air = new BooleanValue("In Air", false);
+    public final BooleanValue directionCheck = new BooleanValue("Check Direction", true);
+    public final BooleanValue pitCheck = new BooleanValue("Check Pitch", true);
+    public final BooleanValue requirePress = new BooleanValue("Only Shift Hold", false);
+    public final BooleanValue blocksOnly = new BooleanValue("Only Blocks", true);
 
     private boolean canSafeWalk() {
         Scaffold scaffold = (Scaffold) Epilogue.moduleManager.modules.get(Scaffold.class);

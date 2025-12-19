@@ -13,7 +13,7 @@ import epilogue.event.EventTarget;
 import epilogue.events.Render2DEvent;
 import epilogue.module.Module;
 import epilogue.module.modules.player.ChestStealer;
-import epilogue.module.modules.misc.NickHider;
+import epilogue.module.modules.misc.Nick;
 import epilogue.module.modules.render.dynamicisland.notification.*;
 import epilogue.util.GetIPUtil;
 import epilogue.util.render.PostProcessing;
@@ -153,7 +153,7 @@ public class DynamicIsland extends Module {
             "群体智慧.hivemind                "
     };
 
-    private final DynamicIslandNew flatImpl = new DynamicIslandNew();
+    private final DynamicIslandFlat flatImpl = new DynamicIslandFlat();
 
     public DynamicIsland() {
         super("DynamicIsland", true);
@@ -1107,9 +1107,9 @@ public class DynamicIsland extends Module {
         String clientInfo = "Epilogue";
         String pingInfo = "Ping: " + (mc.getCurrentServerData() != null ? mc.getCurrentServerData().pingToServer + "ms" : "0ms");
         
-        NickHider nickHider = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
-        if (nickHider != null && nickHider.isEnabled()) {
-            serverInfo = nickHider.replaceNick(serverInfo);
+        Nick nick = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
+        if (nick != null && nick.isEnabled()) {
+            serverInfo = nick.replaceNick(serverInfo);
         }
         
         maxWidth = Math.max(maxWidth, CustomFontRenderer.getStringWidth(serverInfo, otherFont) + 40);
@@ -1241,9 +1241,9 @@ public class DynamicIsland extends Module {
         String clientVersion = Epilogue.clientVersion;
         String pingInfo = "Ping: " + getPing() + "ms";
         
-        NickHider nickHider = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
-        if (nickHider != null && nickHider.isEnabled()) {
-            serverInfo = nickHider.replaceNick(serverInfo);
+        Nick nick = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
+        if (nick != null && nick.isEnabled()) {
+            serverInfo = nick.replaceNick(serverInfo);
         }
         
         CustomFontRenderer.drawStringWithShadow(serverInfo, x + padding, currentY, 0xAAAAAA, font);
@@ -1262,9 +1262,9 @@ public class DynamicIsland extends Module {
             playerInfo.getDisplayName().getFormattedText() : 
             ScorePlayerTeam.formatPlayerName(playerInfo.getPlayerTeam(), playerInfo.getGameProfile().getName());
         
-        NickHider nickHider = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
-        if (nickHider != null && nickHider.isEnabled()) {
-            name = nickHider.replaceNick(name);
+        Nick nick = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
+        if (nick != null && nick.isEnabled()) {
+            name = nick.replaceNick(name);
         }
         
         return name;

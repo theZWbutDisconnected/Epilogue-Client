@@ -32,8 +32,8 @@ public class PotionEffects extends Module {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public final IntValue offsetX = new IntValue("OffsetX", 5, -1000, 1000);
-    public final IntValue offsetY = new IntValue("OffsetY", 80, -1000, 1000);
+    public final IntValue offsetX = new IntValue("Offset X", 5, -1000, 1000);
+    public final IntValue offsetY = new IntValue("Offset Y", 80, -1000, 1000);
 
     private float currentHeight = 0.0f;
 

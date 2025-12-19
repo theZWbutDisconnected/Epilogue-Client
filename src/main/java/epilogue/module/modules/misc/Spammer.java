@@ -13,7 +13,7 @@ public class Spammer extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private final TimerUtil timer = new TimerUtil();
     private int charOffset = 19968;
-    public final TextValue text = new TextValue("Text", "meow");
+    public final TextValue text = new TextValue("Text", "im pig god.hello dream.");
     public final FloatValue delay = new FloatValue("Delay", 3.5F, 0.0F, 3600.0F);
     public final IntValue random = new IntValue("Random", 0, 0, 10);
 

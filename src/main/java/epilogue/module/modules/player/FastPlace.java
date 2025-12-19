@@ -25,8 +25,8 @@ public class FastPlace extends Module {
     private static final DecimalFormat df = new DecimalFormat("0.0#", new DecimalFormatSymbols(Locale.US));
     private long delayMS = 0L;
     public final FloatValue delay = new FloatValue("Delay", 1.0F, 1.0F, 3.0F);
-    public final BooleanValue blocksOnly = new BooleanValue("BlocksOnly", true);
-    public final BooleanValue placeFix = new BooleanValue("PlaceFix", true);
+    public final BooleanValue blocksOnly = new BooleanValue("Only Blocks", true);
+    public final BooleanValue placeFix = new BooleanValue("Place Fix", true);
 
     private boolean canPlace() {
         ItemStack stack = mc.thePlayer.getHeldItem();

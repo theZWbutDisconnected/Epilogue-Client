@@ -22,7 +22,7 @@ public class Refill extends Module {
     private final FloatValue delay = new FloatValue("Delay", 100.0F, 50.0F, 1000.0F);
     private final BooleanValue soup = new BooleanValue("Soup", false);
     private final BooleanValue pot = new BooleanValue("Pot", false);
-    private final BooleanValue onInv = new BooleanValue("OnInv", false);
+    private final BooleanValue onInv = new BooleanValue("On Inventory", false);
     private Item targetItem = null;
     public Refill() {
         super("Refill", false);

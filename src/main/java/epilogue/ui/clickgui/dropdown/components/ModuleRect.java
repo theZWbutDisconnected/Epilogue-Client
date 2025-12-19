@@ -44,8 +44,6 @@ public class ModuleRect {
         List<Value<?>> values = Epilogue.valueHandler.properties.get(module.getClass());
         if (values != null) {
             for (Value<?> value : values) {
-                if (!value.isVisible()) continue;
-                
                 if (value instanceof BooleanValue) {
                     settingComponents.add(new BooleanComponent((BooleanValue) value));
                 }
@@ -57,6 +55,9 @@ public class ModuleRect {
                 }
                 if (value instanceof IntValue) {
                     settingComponents.add(new NumberComponent((IntValue) value));
+                }
+                if (value instanceof PercentValue) {
+                    settingComponents.add(new NumberComponent((PercentValue) value));
                 }
                 if (value instanceof ColorValue) {
                     settingComponents.add(new ColorComponent((ColorValue) value));
@@ -116,21 +117,23 @@ public class ModuleRect {
 
         actualSettingCount = 0;
         typing = false;
-        
+
+        double currentCount = 0;
         for (SettingComponent settingComponent : settingComponents) {
             if (!settingComponent.getSetting().isVisible()) continue;
-            
+
             settingComponent.panelLimitY = panelLimitY;
             settingComponent.settingRectColor = settingRectColor;
             settingComponent.textColor = textColor;
             settingComponent.alpha = alpha;
             settingComponent.x = x;
-            settingComponent.y = y + height;
+            settingComponent.y = (float) (y + height + (currentCount * settingRectHeight));
             settingComponent.width = width;
             settingComponent.height = settingRectHeight;
-            
+
             settingComponent.updateCountSize();
             actualSettingCount += settingComponent.countSize;
+            currentCount += settingComponent.countSize;
         }
         
         double settingHeight = actualSettingCount * settingAnimation.getOutput();
@@ -144,7 +147,7 @@ public class ModuleRect {
                 RenderUtil.scissorStart(x, y + height, width, (float) (settingHeight * settingRectHeight));
             }
 
-            double currentCount = 0;
+            currentCount = 0;
             for (SettingComponent settingComponent : settingComponents) {
                 if (!settingComponent.getSetting().isVisible()) continue;
 

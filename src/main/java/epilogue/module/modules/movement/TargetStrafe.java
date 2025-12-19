@@ -28,9 +28,9 @@ public class TargetStrafe extends Module {
     private int direction = 1;
     public final FloatValue radius = new FloatValue("Radius", 1.0F, 0.0F, 6.0F);
     public final IntValue points = new IntValue("Points", 6, 3, 24);
-    public final BooleanValue requirePress = new BooleanValue("RequirePress", true);
-    public final BooleanValue speedOnly = new BooleanValue("SpeedOnly", true);
-    public final ModeValue showTarget = new ModeValue("ShowTarget", 1, new String[]{"None", "Default"});
+    public final BooleanValue requirePress = new BooleanValue("Only Space Hold", true);
+    public final BooleanValue speedOnly = new BooleanValue("Only Speed", true);
+    public final ModeValue showTarget = new ModeValue("Show", 1, new String[]{"None", "Default"});
 
     private boolean canStrafe() {
         if (this.speedOnly.getValue()) {

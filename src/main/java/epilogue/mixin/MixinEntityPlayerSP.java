@@ -10,7 +10,7 @@ import epilogue.events.MoveInputEvent;
 import epilogue.events.PlayerUpdateEvent;
 import epilogue.events.UpdateEvent;
 import epilogue.management.RotationState;
-import epilogue.module.modules.player.AntiDebuff;
+import epilogue.module.modules.player.NoDebuff;
 import epilogue.module.modules.movement.NoSlow;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.potion.Potion;
@@ -157,8 +157,8 @@ public abstract class MixinEntityPlayerSP extends MixinEntityPlayer {
     )
     private boolean checkPotion(EntityPlayerSP entityPlayerSP, Potion potion) {
         if (potion == Potion.confusion && Epilogue.moduleManager != null) {
-            AntiDebuff antiDebuff = (AntiDebuff) Epilogue.moduleManager.modules.get(AntiDebuff.class);
-            if (antiDebuff.isEnabled() && antiDebuff.nausea.getValue()) {
+            NoDebuff noDebuff = (NoDebuff) Epilogue.moduleManager.modules.get(NoDebuff.class);
+            if (noDebuff.isEnabled() && noDebuff.nausea.getValue()) {
                 return false;
             }
         }

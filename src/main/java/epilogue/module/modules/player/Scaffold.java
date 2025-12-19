@@ -71,20 +71,20 @@ public class Scaffold extends Module {
     private boolean towering = false;
     private EnumFacing targetFacing = null;
     public final ModeValue rotationMode = new ModeValue("Rotations", 2, new String[]{"None", "Vanilla", "Backwards", "Hypixel"});
-    public final ModeValue moveFix = new ModeValue("MoveFix", 1, new String[]{"None", "Silent"});
+    public final ModeValue keepY = new ModeValue("Mode", 3, new String[]{"None", "KeepY", "ExtraBlockKeepY", "Telly"});
+    public final ModeValue tower = new ModeValue("Tower", 3, new String[]{"None", "Vanilla", "ExtraBlock", "Telly"});
+    public final ModeValue moveFix = new ModeValue("Move Fix", 1, new String[]{"None", "Silent"});
     public final ModeValue sprintMode = new ModeValue("Sprint", 1, new String[]{"None", "Vanilla"});
-    public final PercentValue groundMotion = new PercentValue("GroundMotion", 100);
-    public final PercentValue airMotion = new PercentValue("AirMotion", 100);
-    public final PercentValue speedMotion = new PercentValue("SpeedMotion", 100);
-    public final ModeValue tower = new ModeValue("Tower", 3, new String[]{"None", "Vanilla", "Extra", "Telly"});
-    public final ModeValue keepY = new ModeValue("KeepY", 3, new String[]{"None", "Vanilla", "Extra", "Telly"});
-    public final BooleanValue keepYonPress = new BooleanValue("KeepYOnPress", false, () -> this.keepY.getValue() != 0);
-    public final BooleanValue multiplace = new BooleanValue("0TickPlace", false);
-    public final BooleanValue safeWalk = new BooleanValue("SafeWalk", false);
+    public final PercentValue groundMotion = new PercentValue("Ground Motion", 100);
+    public final PercentValue airMotion = new PercentValue("Air Motion", 100);
+    public final PercentValue speedMotion = new PercentValue("Speed Motion", 100);
+    public final BooleanValue keepYonPress = new BooleanValue("Keep Y On Press", false, () -> this.keepY.getValue() != 0);
+    public final BooleanValue multiplace = new BooleanValue("0 Tick Place", false);
+    public final BooleanValue safeWalk = new BooleanValue("Safe Walk", false);
     public final BooleanValue swing = new BooleanValue("Swing", false);
-    public final BooleanValue itemSpoof = new BooleanValue("ItemSpoof", true);
-    public final BooleanValue blockCounter = new BooleanValue("BlockCounter", false);
-    public final BooleanValue textShadow = new BooleanValue("TextShadow", true);
+    public final BooleanValue itemSpoof = new BooleanValue("Item Spoof", true);
+    public final BooleanValue blockCounter = new BooleanValue("AutoBlockIn Counter", false);
+    public final BooleanValue textShadow = new BooleanValue("Text Shadow", true, () -> this.blockCounter.getValue());
 
     private boolean shouldStopSprint() {
         if (this.isTowering()) {

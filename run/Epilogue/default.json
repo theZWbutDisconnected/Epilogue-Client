@@ -3,36 +3,36 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "HorizontalSpeed": 3.0,
-    "VerticalSpeed": 0.0,
+    "Horizontal Speed": 3.0,
+    "Vertical Speed": 0.0,
     "Smoothing": 50,
     "Range": 4.5,
     "Fov": 90,
-    "WeaponsOnly": true,
-    "AllowTools": false,
-    "BotCheck": true,
+    "Weapons Only": true,
+    "Allow Tools": false,
+    "Bot Check": true,
     "Teams": true,
-    "RotationMode": "Normal",
+    "Rotation Mode": "Normal",
     "YawAlgorithm": "Linear",
     "PitchAlgorithm": "Linear",
     "SimulateFriction": true,
     "FrictionAlgorithm": "Time-Incremental",
     "DebugTurnSpeed": false,
     "RecordMode": false,
-    "StopOnTarget": false,
-    "DelayTick": 0
+    "Stop On Target": false,
+    "Delay Tick": 0
   },
   "Animations": {
     "toggled": true,
     "key": 0,
     "hidden": false,
-    "Sword": "Leaked",
+    "Sword": "Astolfo",
     "BlockPos X": 0.0,
     "BlockPos Y": 0.0,
     "BlockPos Z": 0.0,
     "Item Size": 0.0
   },
-  "AntiDebuff": {
+  "NoDebuff": {
     "toggled": false,
     "key": 0,
     "hidden": false,
@@ -47,10 +47,10 @@
     "Fov": 360,
     "Rotations": true,
     "Swing": true,
-    "MoveFix": "Slient",
-    "ShowTarget": "NONE"
+    "Move Fix": "Slient",
+    "Show": "NONE"
   },
-  "AntiObfuscate": {
+  "Ghost Hunter": {
     "toggled": false,
     "key": 0,
     "hidden": true
@@ -59,8 +59,8 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "mode": "BLINK",
-    "distance": 5.0
+    "Mode": "Blink",
+    "Distance": 5.0
   },
   "Arraylist": {
     "toggled": true,
@@ -71,20 +71,20 @@
     "Back Ground": true,
     "Back Ground Alpha": 40,
     "Position": 0,
-    "Text Height": 5.0,
+    "Text Height": 6.6,
     "Text Offset": 2.33
   },
   "AutoClicker": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "MinCps": 8,
-    "MaxCps": 12,
-    "BlockHit": false,
-    "BlockHitTicks": 1.5,
-    "WeaponsOnly": true,
-    "AllowTools": false,
-    "BreakBlocks": true
+    "Min Cps": 8,
+    "Max Cps": 12,
+    "AutoBlockIn Hit": false,
+    "AutoBlockIn HitT icks": 1.5,
+    "Weapons Only": true,
+    "Allow Tools": false,
+    "Break Blocks": true
   },
   "AutoHeal": {
     "toggled": false,
@@ -92,15 +92,26 @@
     "hidden": false,
     "Health": 35,
     "Delay": 4000,
-    "RegenCheck": false
+    "Regen Check": false
   },
   "AutoTool": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Delay": 0,
-    "SwitchBack": true,
-    "SneakOnly": true
+    "Switch Back": true,
+    "Only Sneak": true
+  },
+  "AutoBlockIn": {
+    "toggled": false,
+    "key": 0,
+    "hidden": false,
+    "Range": 4.5,
+    "Speed": 20,
+    "Place Delay": 50,
+    "Rotation Tolerance": 25,
+    "Show Progress": true,
+    "Move Fix": "Silent"
   },
   "BedNuker": {
     "toggled": false,
@@ -109,15 +120,15 @@
     "Mode": "Legit",
     "Range": 4.5,
     "Speed": 0,
-    "GroundSpoof": false,
-    "IgnoreVelocity": "None",
+    "Ground Speed": false,
+    "Ignore Velocity": "None",
     "Surroundings": true,
-    "ToolCheck": true,
+    "Check Tool": true,
     "Whitelist": true,
     "Swing": true,
-    "MoveFix": "Silent",
-    "ShowTarget": "Default",
-    "ShowProgress": "Default"
+    "Move Fix": "Silent",
+    "Show": "Default",
+    "Progress": "Default"
   },
   "BedESP": {
     "toggled": false,
@@ -130,41 +141,41 @@
     "outline": false,
     "obsidian": true
   },
-  "BedTracker": {
+  "BedChecker": {
     "toggled": false,
     "key": 0,
     "hidden": true,
     "Alerts": true,
-    "AlertsRange": 48,
-    "AlertsOnPearl": true,
-    "AlertsSound": "Meow",
-    "AlertsFrequency": 5,
+    "Alerts Range": 48,
+    "Alerts On Pearl": true,
+    "Alerts Sound": "Meow",
+    "Alerts Frequency": 5,
     "Macro": false,
-    "MacroRange": 24,
-    "MacroOnPearl": false,
-    "MacroText": "/lobby",
-    "MacroDelay": 1,
+    "Macro Range": 24,
+    "Macro On Pearl": false,
+    "Macro Text": "/lobby",
+    "Macro Delay": 1,
     "Hud": true,
-    "HudPositionX": "Left",
-    "HudPositionY": "Top",
-    "HudOffsetX": 2,
-    "HudOffsetY": 2,
-    "HudScale": 1.0,
-    "HudShadow": true
+    "X": "Left",
+    "Y": "Top",
+    "Offset X": 2,
+    "Offset Y": 2,
+    "Scale": 1.0,
+    "TextShadow": true
   },
   "Blink": {
     "toggled": false,
     "key": 47,
     "hidden": false,
-    "mode": "DEFAULT",
-    "ticks": 0
+    "Mode": "Default",
+    "Ticks": 20
   },
   "Camera": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Smoothness": 0.05,
-    "OnlyThirdPerson": true
+    "Only Third Person": true
   },
   "Chams": {
     "toggled": false,
@@ -186,12 +197,11 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "range": 4,
-    "rotate": true,
-    "delay": 200,
-    "through-walls": false,
-    "auto-close": false,
-    "debug": false
+    "Range": 4,
+    "Rotate": true,
+    "Delay": 200,
+    "ThroughWalls": false,
+    "AutoClose": false
   },
   "ChestESP": {
     "toggled": false,
@@ -205,19 +215,19 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "MinDelay": 0,
-    "MaxDelay": 0,
-    "OpenDelay": 0,
+    "Min Delay": 0,
+    "Max Delay": 0,
+    "Open Delay": 0,
     "Mode": "Instant",
-    "AutoClose": true,
-    "NameCheck": true,
-    "SkipTrash": true
+    "Auto Close": true,
+    "Check Name": true,
+    "Skip Trash": true
   },
   "ChestView": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "BackgroundAlpha": 120
+    "Background Alpha": 120
   },
   "ClickGUI": {
     "toggled": false,
@@ -256,28 +266,25 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "Mode": "PredictionInventory",
-    "Jump": false,
-    "Spoof Dig Release": true,
-    "Debug": false
+    "Mode": "PredictionInventory"
   },
   "Eagle": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "MinDelay": 2,
-    "MaxDelay": 3,
-    "DirectionCheck": true,
-    "PitchCheck": true,
-    "BlocksOnly": true
+    "Min Delay": 2,
+    "Max Delay": 3,
+    "Check Direction": true,
+    "Check Pitch": true,
+    "Only Blocks": true
   },
   "ESP": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Mode": "Glow",
-    "Color": "Default",
-    "HealthBar": "None",
+    "Color": "Hud",
+    "Health Bar": "None",
     "Players": true,
     "Friends": true,
     "Enemies": true,
@@ -289,15 +296,15 @@
     "key": 0,
     "hidden": false,
     "Delay": 1.0,
-    "BlocksOnly": true,
-    "PlaceFix": true
+    "Only Blocks": true,
+    "Place Fix": true
   },
   "Fly": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "HorizontalSpeed": 1.0,
-    "VerticalSpeed": 1.0
+    "Horizontal Speed": 1.0,
+    "Vertical Speed": 1.0
   },
   "Fullbright": {
     "toggled": true,
@@ -305,19 +312,19 @@
     "hidden": true,
     "Mode": "Gamma"
   },
-  "GlobalFont": {
+  "FontRender": {
     "toggled": true,
     "key": 0,
     "hidden": false,
-    "Font": "JelloMedium",
-    "Size": 30.0
+    "Font": "OpenSansRegular",
+    "Size": 27.2
   },
   "GhostHand": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "TeamOnly": true,
-    "IgnoreWeapons": false
+    "Only Team": true,
+    "Ignore Weapons": false
   },
   "Indicators": {
     "toggled": false,
@@ -325,7 +332,7 @@
     "hidden": true,
     "Scale": 1.0,
     "Offset": 50.0,
-    "DirectionCheck": true,
+    "Check Direction": true,
     "Fireballs": true,
     "Pearls": true,
     "Arrows": true
@@ -343,11 +350,11 @@
     "ToggleSound": "Vanilla"
   },
   "Item2D": {
-    "toggled": false,
+    "toggled": true,
     "key": 0,
     "hidden": false,
-    "Size": 18.0,
-    "MaxDistance": 48.0
+    "Size": 8.0,
+    "Max Distance": 48.0
   },
   "JumpCircles": {
     "toggled": false,
@@ -362,24 +369,24 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "MinDelay": 0,
-    "MaxDelay": 0,
-    "OpenDelay": 0,
+    "Min Delay": 0,
+    "Max Delay": 0,
+    "Open Delay": 0,
     "Mode": "Instant",
-    "AutoArmor": true,
-    "DropTrash": true,
-    "SwordSlot": 1,
-    "PickaxeSlot": 8,
-    "ShovelSlot": 7,
-    "AxeSlot": 9,
-    "BlocksSlot": 2,
+    "Auto Armor": true,
+    "Drop Trash": true,
+    "Sword Slot": 1,
+    "Pickaxe Slot": 8,
+    "Shovel Slot": 7,
+    "Axe Slot": 9,
+    "Blocks Slot": 2,
     "Blocks": 128,
-    "ThrowsSlot": 4,
-    "ThrowsAmount": 64,
-    "GappleSlot": 3,
+    "Throws Slot": 4,
+    "Throws Amount": 64,
+    "Gapple Slot": 3,
     "Silent": true,
-    "NoKillAura": true,
-    "NoScaffold": true
+    "No KillAura": true,
+    "No Scaffold": true
   },
   "InvWalk": {
     "toggled": false,
@@ -393,8 +400,8 @@
     "hidden": false,
     "Opacity": 25,
     "Outline": false,
-    "ItemCount": true,
-    "AutoScale": true,
+    "Item Count": true,
+    "Auto Scale": true,
     "Emeralds": true,
     "Diamonds": true,
     "Gold": true,
@@ -405,16 +412,16 @@
     "key": 0,
     "hidden": false,
     "Speed": 2.5,
-    "NoPush": true,
-    "GroundOnly": true
+    "No Push": true,
+    "Only Ground": true
   },
   "KeepSprint": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "Slowdown": 0,
-    "GroundOnly": false,
-    "ReachOnly": false
+    "Slow": 0,
+    "Only Ground": false,
+    "Only In Reach": false
   },
   "Aura": {
     "toggled": false,
@@ -422,7 +429,7 @@
     "hidden": false,
     "Select Mode": "Switch",
     "Sort Mode": "Health",
-    "AutoBlock Mode": "Fake",
+    "AutoBlock Mode": "HypixelA",
     "AutoBlock Only Right Click": false,
     "AutoBlock CPS": 10.0,
     "AutoBlock Range": 6.0,
@@ -436,7 +443,7 @@
     "MoveFix Mode": "Silent",
     "Through Walls": true,
     "Attack Only Left Click": false,
-    "Break Block": true,
+    "Break AutoBlockIn": true,
     "Only Weapons": true,
     "Allow Tools": false,
     "No Inventory": true,
@@ -447,7 +454,7 @@
     "Animals": false,
     "Golems": false,
     "ClothesMoth": false,
-    "Teams": true
+    "Teams": false
   },
   "FakeLag": {
     "toggled": false,
@@ -461,18 +468,13 @@
     "Anti Bot": true,
     "Position": "NONE"
   },
-  "LightningTracker": {
-    "toggled": false,
-    "key": 0,
-    "hidden": true
-  },
   "LongJump": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Mode": "Fireball",
     "Motion": 1.0,
-    "SpeedMotion": 1.0,
+    "Speed Motion": 1.0,
     "Strafe": 0
   },
   "MCF": {
@@ -481,15 +483,15 @@
     "hidden": true
   },
   "NameTags": {
-    "toggled": false,
+    "toggled": true,
     "key": 0,
     "hidden": false,
     "Mode": "Better",
     "Amount": 20,
     "Scale": 1.0,
     "Height": 0.4,
-    "Rounding": 3.5,
-    "AutoScale": true,
+    "Rounding": 10.0,
+    "Auto Scale": true,
     "Background": 25,
     "Shadow": true,
     "Distance": "None",
@@ -508,7 +510,7 @@
     "Self": false,
     "Bots": false
   },
-  "NickHider": {
+  "Nick": {
     "toggled": false,
     "key": 0,
     "hidden": true,
@@ -520,9 +522,9 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "mode": "PACKET",
-    "distance": 3.0,
-    "delay": 0
+    "Mode": "Packet",
+    "Distance": 3.0,
+    "Delay": 0
   },
   "NoHitDelay": {
     "toggled": true,
@@ -550,46 +552,24 @@
     "toggled": true,
     "key": 0,
     "hidden": false,
-    "Sword Mode": "Blink",
-    "OnlyKillAuraAutoBlock": true,
+    "Sword Mode": "Prediction",
+    "Only KillAura AutoBlock": true,
     "Sword Motion": 100,
     "Sword Sprint": true,
     "Sword Blink Delay": 1,
     "Sword Blink Duration": 2,
-    "food-mode": "NONE",
-    "food-motion": 100,
-    "food-sprint": true,
-    "food-blink-delay": 2,
-    "food-blink-duration": 1,
-    "bow-mode": "NONE",
-    "bow-motion": 100,
-    "bow-sprint": true,
-    "bow-blink-delay": 2,
-    "bow-blink-duration": 1,
-    "success-detection": true,
-    "success-message": true
-  },
-  "NoSlow2": {
-    "toggled": false,
-    "key": 0,
-    "hidden": false,
-    "sword-mode": "BLINK",
-    "sword-motion": 100,
-    "sword-sprint": true,
-    "sword-blink-delay": 1,
-    "sword-blink-duration": 2,
-    "food-mode": "NONE",
-    "food-motion": 100,
-    "food-sprint": true,
-    "food-blink-delay": 2,
-    "food-blink-duration": 1,
-    "bow-mode": "NONE",
-    "bow-motion": 100,
-    "bow-sprint": true,
-    "bow-blink-delay": 2,
-    "bow-blink-duration": 1,
-    "success-detection": true,
-    "success-message": true
+    "Food Mode": "None",
+    "Food Motion": 100,
+    "Food Sprint": true,
+    "Food Blink Delay": 2,
+    "Food Blink Duration": 1,
+    "Bow Mode": "None",
+    "Bow Motion": 100,
+    "Bow Sprint": true,
+    "Bow Blink Delay": 2,
+    "Bow Blink Duration": 1,
+    "Success Detection": true,
+    "Success Message": true
   },
   "Notification": {
     "toggled": false,
@@ -598,29 +578,29 @@
     "BackgroundAlpha": 45
   },
   "PotionEffects": {
-    "toggled": false,
+    "toggled": true,
     "key": 0,
     "hidden": false,
-    "OffsetX": 5,
-    "OffsetY": 80
+    "Offset X": -740,
+    "Offset Y": 80
   },
   "PostProcessing": {
     "toggled": true,
     "key": 0,
     "hidden": false,
     "Blur": true,
-    "BlurStrength": 12,
+    "Blur Strength": 12,
     "Bloom": true,
-    "BloomColorMode": "Custom",
-    "BloomColorSpeed": 2.0,
-    "BloomColor": "000005",
-    "BloomSecondColor": "8080FF",
-    "BloomAstolfoOffset": 4.9,
-    "BloomAstolfoIndex": 107.0,
-    "ArrayListBloomFromInterface": true,
-    "NewDynamicIslandBloomFromItSelf": true,
-    "BloomIterations": 2,
-    "BloomOffset": 3
+    "Bloom Color Mode": "Custom",
+    "Bloom Color Speed": 2.0,
+    "Bloom Color": "000000",
+    "Bloom Second Color": "000000",
+    "Bloom Astolfo Offset": 5.0,
+    "Bloom Astolfo Index": 107.0,
+    "ArrayList Bloom From Interface": true,
+    "Flat DynamicIsland Bloom From It Self": true,
+    "Bloom Iterations": 2,
+    "Bloom Offset": 2
   },
   "PartySpammer": {
     "toggled": false,
@@ -629,15 +609,15 @@
     "Command": "/party invite {player}",
     "Delay": 5.0,
     "Cooldown": 60,
-    "IgnoreSelf": true,
+    "Ignore Self": true,
     "CaseSensitive": false,
-    "LoopMode": false,
+    "Loop": false,
     "Filter": "",
-    "UseWhitelist": false,
+    "Use Whitelist": false,
     "Whitelist": "player1,player2,player3",
     "Debug": false
   },
-  "Reach": {
+  "Range": {
     "toggled": false,
     "key": 0,
     "hidden": false,
@@ -648,63 +628,63 @@
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "Delay": 100.0,
+    "Delay": 50.0,
     "Soup": false,
-    "Pot": false,
-    "OnInv": false
+    "Pot": true,
+    "On Inventory": true
   },
   "SafeWalk": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Motion": 1.0,
-    "SpeedMotion": 1.0,
-    "Air": false,
-    "DirectionCheck": true,
-    "PitchCheck": true,
-    "RequirePress": false,
-    "BlocksOnly": true
+    "Speed Motion": 1.0,
+    "In Air": false,
+    "Check Direction": true,
+    "Check Pitch": true,
+    "Only Shift Hold": false,
+    "Only Blocks": true
   },
   "Scaffold": {
     "toggled": false,
     "key": 33,
     "hidden": false,
     "Rotations": "Backwards",
-    "MoveFix": "Silent",
-    "Sprint": "Vanilla",
-    "GroundMotion": 100,
-    "AirMotion": 100,
-    "SpeedMotion": 100,
+    "Mode": "Telly",
     "Tower": "Telly",
-    "KeepY": "Telly",
-    "KeepYOnPress": false,
-    "0TickPlace": false,
-    "SafeWalk": false,
+    "Move Fix": "Silent",
+    "Sprint": "Vanilla",
+    "Ground Motion": 100,
+    "Air Motion": 100,
+    "Speed Motion": 100,
+    "Keep Y On Press": false,
+    "0 Tick Place": false,
+    "Safe Walk": false,
     "Swing": false,
-    "ItemSpoof": true,
-    "BlockCounter": false,
-    "TextShadow": true
+    "Item Spoof": true,
+    "AutoBlockIn Counter": false,
+    "Text Shadow": true
   },
   "Scoreboard": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Hide": false,
-    "OffsetX": 0,
-    "OffsetY": 0
+    "Offset X": 0,
+    "Offset Y": 0
   },
   "Session": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "OffsetX": 5,
-    "OffsetY": 5
+    "Offset X": 5,
+    "Offset Y": 5
   },
   "Spammer": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "Text": "meow",
+    "Text": "im pig god.hello dream.",
     "Delay": 3.5,
     "Random": 0
   },
@@ -727,24 +707,26 @@
     "toggled": true,
     "key": 0,
     "hidden": true,
-    "FovFix": true
+    "Fix CCB": true
   },
-  "MoreKB": {
+  "SuperKnockBack": {
     "toggled": false,
     "key": 0,
     "hidden": false,
     "Mode": "Legit",
+    "Delay": 5.5,
+    "Duration": 1.5,
     "Intelligent": false,
-    "OnlyGound": true
+    "Only Gound": true
   },
   "TargetESP": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "MarkMode": "Ghost",
-    "ImageMode": "Rectangle",
+    "Mark Mode": "Ghost",
+    "Image Mode": "Rectangle",
     "Animation": true,
-    "SelectImage": false,
+    "Select Image": false,
     "CircleSpeed": 2.0,
     "OnlyPlayer": false,
     "ShowHurt": false
@@ -775,9 +757,9 @@
     "hidden": false,
     "Radius": 1.0,
     "Points": 6,
-    "RequirePress": true,
-    "SpeedOnly": true,
-    "ShowTarget": "Default"
+    "Only Space Hold": true,
+    "Only Speed": true,
+    "Show": "Default"
   },
   "Tracers": {
     "toggled": false,
@@ -808,19 +790,20 @@
     "Mode": "Prediction",
     "Attack Reduce": true,
     "Chance": 100,
-    "Horizontal": 100,
-    "Vertical": 100,
-    "ExplosionsHorizontal": 100,
-    "ExplosionsVertical": 100,
-    "FakeCheck": true,
-    "DebugLog": true,
-    "DelayTicks": 1,
-    "JumpReset": true,
-    "SprintReset": true,
+    "Velocity Horizontal": 100,
+    "Velocity Vertical": 100,
+    "Explosions Horizontal": 100,
+    "Explosions Vertical": 100,
+    "Fake Check": true,
+    "Debug": true,
+    "Delay Ticks": 1,
+    "Velocity Chance": 100,
+    "Jump Reset": true,
+    "Sprint Reset": true,
     "Normal Reduce HurtTime": 10,
     "Norma Reduce Factor": 0.6,
     "Blink": true,
-    "Show Blink Ticks": true,
+    "Show Blink Ticks": false,
     "Air Delay": false
   },
   "ViewClip": {
@@ -829,17 +812,10 @@
     "hidden": false
   },
   "WaterMark": {
-    "toggled": true,
-    "key": 0,
-    "hidden": false,
-    "Mode": "Exhibition"
-  },
-  "WTap": {
     "toggled": false,
     "key": 0,
     "hidden": false,
-    "Delay": 5.5,
-    "Duration": 1.5
+    "Mode": "Exhibition"
   },
   "Xray": {
     "toggled": false,
@@ -848,27 +824,27 @@
     "Mode": "Soft",
     "Opacity": 50,
     "Range": 64,
-    "CavesOnly": true,
-    "CavesRadius": 2,
+    "Only Caves": true,
+    "Caves Radius": 2,
     "Diamonds": true,
-    "DiamondsTracers": true,
+    "Diamonds Tracers": true,
     "Gold": true,
-    "GoldTracers": true,
+    "Gold Tracers": true,
     "Iron": false,
-    "IronTracers": false,
+    "Iron Tracers": false,
     "Coal": false,
-    "CoalTracers": false,
+    "Coal Tracers": false,
     "Redstone": false,
-    "RedstoneTracers": false,
+    "Redstone Tracers": false,
     "Lapis": false,
     "LapisTracers": false,
     "Emeralds": false,
-    "EmeraldsTracers": false,
+    "Emeralds Tracers": false,
     "Spawners": false,
-    "SpawnersTracers": false,
+    "Spawners Tracers": false,
     "Canes": false,
-    "CanesTracers": false,
+    "Canes Tracers": false,
     "Warts": false,
-    "WartsTracers": false
+    "Warts Tracers": false
   }
 }

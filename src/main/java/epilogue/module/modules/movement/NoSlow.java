@@ -20,9 +20,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.network.Packet;
+import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IChatComponent;
 
 public class NoSlow
         extends Module {
@@ -32,34 +33,33 @@ public class NoSlow
     private long lastCheckTime = 0L;
     private boolean wasBlocking = false;
     private long lastBlockingTime = 0L;
-    private static final long SPRINT_COOLDOWN_MS = 300L;
     private boolean isBlinking = false;
     private int blinkTimer = 0;
-    public final ModeValue swordMode = new ModeValue("Sword Mode", 2, new String[]{"NONE", "Vanilla", "Blink"});
-    public final BooleanValue onlyKillAuraAutoBlock = new BooleanValue("OnlyKillAuraAutoBlock", false, () -> (Integer)this.swordMode.getValue() != 0);
-    public final PercentValue swordMotion = new PercentValue("Sword Motion", 100, () -> (Integer)this.swordMode.getValue() != 0);
-    public final BooleanValue swordSprint = new BooleanValue("Sword Sprint", true, () -> (Integer)this.swordMode.getValue() != 0);
-    public final IntValue swordBlinkDelay = new IntValue("Sword Blink Delay", 1, 1, 10, () -> (Integer)this.swordMode.getValue() == 2);
-    public final IntValue swordBlinkDuration = new IntValue("Sword Blink Duration", 2, 1, 5, () -> (Integer)this.swordMode.getValue() == 2);
-    public final ModeValue foodMode = new ModeValue("food-mode", 0, new String[]{"NONE", "VANILLA", "FLOAT", "BLINK"});
-    public final PercentValue foodMotion = new PercentValue("food-motion", 100, () -> (Integer)this.foodMode.getValue() != 0);
-    public final BooleanValue foodSprint = new BooleanValue("food-sprint", true, () -> (Integer)this.foodMode.getValue() != 0);
-    public final IntValue foodBlinkDelay = new IntValue("food-blink-delay", 2, 1, 10, () -> (Integer)this.foodMode.getValue() == 3);
-    public final IntValue foodBlinkDuration = new IntValue("food-blink-duration", 1, 1, 5, () -> (Integer)this.foodMode.getValue() == 3);
-    public final ModeValue bowMode = new ModeValue("bow-mode", 0, new String[]{"NONE", "VANILLA", "FLOAT", "BLINK"});
-    public final PercentValue bowMotion = new PercentValue("bow-motion", 100, () -> (Integer)this.bowMode.getValue() != 0);
-    public final BooleanValue bowSprint = new BooleanValue("bow-sprint", true, () -> (Integer)this.bowMode.getValue() != 0);
-    public final IntValue bowBlinkDelay = new IntValue("bow-blink-delay", 2, 1, 10, () -> (Integer)this.bowMode.getValue() == 3);
-    public final IntValue bowBlinkDuration = new IntValue("bow-blink-duration", 1, 1, 5, () -> (Integer)this.bowMode.getValue() == 3);
-    public final BooleanValue successDetection = new BooleanValue("success-detection", true, () -> (Integer)this.swordMode.getValue() == 1 || (Integer)this.swordMode.getValue() == 2);
-    public final BooleanValue successMessage = new BooleanValue("success-message", true, () -> (Boolean)this.successDetection.getValue());
+    public final ModeValue swordMode = new ModeValue("Sword Mode", 2, new String[]{"None", "Vanilla", "Blink", "Prediction"});
+    public final BooleanValue onlyKillAuraAutoBlock = new BooleanValue("Only KillAura AutoBlock", false, () -> this.swordMode.getValue() != 0);
+    public final PercentValue swordMotion = new PercentValue("Sword Motion", 100, () -> this.swordMode.getValue() != 0);
+    public final BooleanValue swordSprint = new BooleanValue("Sword Sprint", true, () -> this.swordMode.getValue() != 0);
+    public final IntValue swordBlinkDelay = new IntValue("Sword Blink Delay", 1, 1, 10, () -> this.swordMode.getValue() == 2);
+    public final IntValue swordBlinkDuration = new IntValue("Sword Blink Duration", 2, 1, 5, () -> this.swordMode.getValue() == 2);
+    public final ModeValue foodMode = new ModeValue("Food Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink"});
+    public final PercentValue foodMotion = new PercentValue("Food Motion", 100, () -> this.foodMode.getValue() != 0);
+    public final BooleanValue foodSprint = new BooleanValue("Food Sprint", true, () -> this.foodMode.getValue() != 0);
+    public final IntValue foodBlinkDelay = new IntValue("Food Blink Delay", 2, 1, 10, () -> this.foodMode.getValue() == 3);
+    public final IntValue foodBlinkDuration = new IntValue("Food Blink Duration", 1, 1, 5, () -> this.foodMode.getValue() == 3);
+    public final ModeValue bowMode = new ModeValue("Bow Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink"});
+    public final PercentValue bowMotion = new PercentValue("Bow Motion", 100, () -> this.bowMode.getValue() != 0);
+    public final BooleanValue bowSprint = new BooleanValue("Bow Sprint", true, () -> this.bowMode.getValue() != 0);
+    public final IntValue bowBlinkDelay = new IntValue("Bow Blink Delay", 2, 1, 10, () -> this.bowMode.getValue() == 3);
+    public final IntValue bowBlinkDuration = new IntValue("Bow Blink Duration", 1, 1, 5, () -> this.bowMode.getValue() == 3);
+    public final BooleanValue successDetection = new BooleanValue("Success Detection", true, () -> this.swordMode.getValue() == 1 || this.swordMode.getValue() == 2);
+    public final BooleanValue successMessage = new BooleanValue("Success Message", true, () -> this.successDetection.getValue());
 
     public NoSlow() {
         super("NoSlow", false);
     }
 
     public boolean isSwordActive() {
-        return (Integer)this.swordMode.getValue() != 0
+        return this.swordMode.getValue() != 0
                 && ItemUtil.isHoldingSword()
                 && (!this.onlyKillAuraAutoBlock.getValue() || this.isKillAuraAutoBlocking());
     }
@@ -80,19 +80,23 @@ public class NoSlow
     }
 
     public boolean isFoodActive() {
-        return (Integer)this.foodMode.getValue() != 0 && ItemUtil.isEating();
+        return this.foodMode.getValue() != 0 && ItemUtil.isEating();
     }
 
     public boolean isBowActive() {
-        return (Integer)this.bowMode.getValue() != 0 && ItemUtil.isUsingBow();
+        return this.bowMode.getValue() != 0 && ItemUtil.isUsingBow();
     }
 
     public boolean isFloatMode() {
-        return (Integer)this.foodMode.getValue() == 2 && ItemUtil.isEating() || (Integer)this.bowMode.getValue() == 2 && ItemUtil.isUsingBow();
+        return this.foodMode.getValue() == 2 && ItemUtil.isEating() || this.bowMode.getValue() == 2 && ItemUtil.isUsingBow();
     }
 
     public boolean isBlinkMode() {
-        return (Integer)this.swordMode.getValue() == 2 && ItemUtil.isHoldingSword() || (Integer)this.foodMode.getValue() == 3 && ItemUtil.isEating() || (Integer)this.bowMode.getValue() == 3 && ItemUtil.isUsingBow();
+        return this.swordMode.getValue() == 2 && ItemUtil.isHoldingSword() || this.foodMode.getValue() == 3 && ItemUtil.isEating() || this.bowMode.getValue() == 3 && ItemUtil.isUsingBow();
+    }
+
+    public boolean isPredictionMode() {
+        return this.swordMode.getValue() == 3 && ItemUtil.isHoldingSword();
     }
 
     public boolean isAnyActive() {
@@ -100,17 +104,17 @@ public class NoSlow
     }
 
     public boolean canSprint() {
-        return this.isSwordActive() && (Boolean)this.swordSprint.getValue() != false || this.isFoodActive() && (Boolean)this.foodSprint.getValue() != false || this.isBowActive() && (Boolean)this.bowSprint.getValue() != false;
+        return this.isSwordActive() && this.swordSprint.getValue() != false || this.isFoodActive() && this.foodSprint.getValue() != false || this.isBowActive() && this.bowSprint.getValue() != false;
     }
 
     public int getMotionMultiplier() {
         if (ItemUtil.isHoldingSword()) {
-            return (Integer)this.swordMotion.getValue();
+            return this.swordMotion.getValue();
         }
         if (ItemUtil.isEating()) {
-            return (Integer)this.foodMotion.getValue();
+            return this.foodMotion.getValue();
         }
-        return ItemUtil.isUsingBow() ? (Integer)this.bowMotion.getValue() : 100;
+        return ItemUtil.isUsingBow() ? this.bowMotion.getValue() : 100;
     }
 
     private boolean shouldBlink() {
@@ -121,14 +125,14 @@ public class NoSlow
         int delay = 2;
         int duration = 1;
         if (ItemUtil.isHoldingSword()) {
-            delay = (Integer)this.swordBlinkDelay.getValue();
-            duration = (Integer)this.swordBlinkDuration.getValue();
+            delay = this.swordBlinkDelay.getValue();
+            duration = this.swordBlinkDuration.getValue();
         } else if (ItemUtil.isEating()) {
-            delay = (Integer)this.foodBlinkDelay.getValue();
-            duration = (Integer)this.foodBlinkDuration.getValue();
+            delay = this.foodBlinkDelay.getValue();
+            duration = this.foodBlinkDuration.getValue();
         } else if (ItemUtil.isUsingBow()) {
-            delay = (Integer)this.bowBlinkDelay.getValue();
-            duration = (Integer)this.bowBlinkDuration.getValue();
+            delay = this.bowBlinkDelay.getValue();
+            duration = this.bowBlinkDuration.getValue();
         }
         int totalCycle = delay + duration;
         int currentPhase = this.blinkTimer % totalCycle;
@@ -142,7 +146,7 @@ public class NoSlow
 
     private boolean checkNoSlowSuccess() {
         boolean newSuccessState;
-        if (!(this.isEnabled() && this.isSwordActive() && ((Boolean)this.successDetection.getValue()).booleanValue())) {
+        if (!(this.isEnabled() && this.isSwordActive() && (this.successDetection.getValue()).booleanValue())) {
             return false;
         }
         long currentTime = System.currentTimeMillis();
@@ -153,19 +157,15 @@ public class NoSlow
         boolean wasSprinting = NoSlow.mc.thePlayer.isSprinting();
         boolean isMoving = Math.abs(NoSlow.mc.thePlayer.movementInput.moveForward) > 0.1f || Math.abs(NoSlow.mc.thePlayer.movementInput.moveStrafe) > 0.1f;
         boolean bl = newSuccessState = wasSprinting && isMoving && PlayerUtil.isUsingItem();
-        if (newSuccessState != this.noslowSuccess && ((Boolean)this.successMessage.getValue()).booleanValue()) {
+        if (newSuccessState != this.noslowSuccess && (this.successMessage.getValue()).booleanValue()) {
             if (newSuccessState) {
-                NoSlow.mc.thePlayer.addChatMessage((IChatComponent)new ChatComponentText("§a[NoSlow] §fSuccess - Sword blocking without slowdown!"));
+                NoSlow.mc.thePlayer.addChatMessage(new ChatComponentText("§a[NoSlow] §fSuccess - Sword blocking without slowdown!"));
             } else {
-                NoSlow.mc.thePlayer.addChatMessage((IChatComponent)new ChatComponentText("§c[NoSlow] §fFailed - Normal sword blocking slowdown"));
+                NoSlow.mc.thePlayer.addChatMessage(new ChatComponentText("§c[NoSlow] §fFailed - Normal sword blocking slowdown"));
             }
         }
         this.noslowSuccess = newSuccessState;
         return this.noslowSuccess;
-    }
-
-    public boolean isNoSlowSuccess() {
-        return this.checkNoSlowSuccess();
     }
 
     @EventTarget
@@ -211,6 +211,11 @@ public class NoSlow
 
     @EventTarget(value=3)
     public void onPlayerUpdate(PlayerUpdateEvent event) {
+        if (this.isEnabled() && this.isPredictionMode()) {
+            if (PlayerUtil.isUsingItem()) {
+                this.sendPredictionC09();
+            }
+        }
         if (this.isEnabled() && this.isFloatMode()) {
             int item = NoSlow.mc.thePlayer.inventory.currentItem;
             if (this.lastSlot != item && PlayerUtil.isUsingItem()) {
@@ -221,9 +226,19 @@ public class NoSlow
             this.lastSlot = -1;
             Epilogue.floatManager.setFloatState(false, FloatModules.NO_SLOW);
         }
-        if (this.isSwordActive() && ((Boolean)this.successDetection.getValue()).booleanValue()) {
+        if (this.isSwordActive() && (this.successDetection.getValue()).booleanValue()) {
             this.checkNoSlowSuccess();
         }
+    }
+
+    private void sendPredictionC09() {
+        if (NoSlow.mc.thePlayer == null || mc.getNetHandler() == null) {
+            return;
+        }
+        int current = NoSlow.mc.thePlayer.inventory.currentItem;
+        int next = (current + 1) % 9;
+        mc.getNetHandler().addToSendQueue( new C09PacketHeldItemChange(next));
+        mc.getNetHandler().addToSendQueue( new C09PacketHeldItemChange(current));
     }
 
     @EventTarget
@@ -251,11 +266,6 @@ public class NoSlow
                 NoSlow.mc.thePlayer.motionY = 0.42f;
             }
         }
-    }
-
-    public String checkAndReturnStatus() {
-        boolean success = this.checkNoSlowSuccess();
-        return success ? "success" : "failed";
     }
 
     @Override

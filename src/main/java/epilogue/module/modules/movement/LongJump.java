@@ -31,7 +31,7 @@ public class LongJump extends Module {
     private int savedHotbarSlot = -1;
     public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Fireball", "FireballManual", "FireballHigh", "FireballFlat"});
     public final FloatValue motion = new FloatValue("Motion", 1.0F, 1.0F, 20.0F);
-    public final FloatValue speedMotion = new FloatValue("SpeedMotion", 1.0F, 1.0F, 20.0F);
+    public final FloatValue speedMotion = new FloatValue("Speed Motion", 1.0F, 1.0F, 20.0F);
     public final PercentValue strafe = new PercentValue("Strafe", 0);
     private int findFireballInHotbar() {
         if (mc.thePlayer == null) {

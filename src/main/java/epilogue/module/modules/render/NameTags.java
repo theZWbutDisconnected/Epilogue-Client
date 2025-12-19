@@ -59,12 +59,12 @@ public class NameTags extends Module {
     private static final ResourceLocation POSITIONING_ICON = new ResourceLocation("epilogue/texture/nametags/Positioning.png");
     public static final ResourceLocation HEART_ICON = new ResourceLocation("epilogue/texture/nametags/Heart.png");
 
-    public final ModeValue mode = new ModeValue("Mode", 1, new String[]{"Myau", "Better"});
+    public final ModeValue mode = new ModeValue("Mode", 1, new String[]{"Vanilla", "Better"});
     public final IntValue amount = new IntValue("Amount", 20, 1, 200);
     public final FloatValue scale = new FloatValue("Scale", 1.0F, 0.5F, 2.0F);
     public final FloatValue height = new FloatValue("Height", 0.4F, -1.0F, 2.0F);
     public final FloatValue rounding = new FloatValue("Rounding", 3.5F, 0.0F, 10.0F);
-    public final BooleanValue autoScale = new BooleanValue("AutoScale", true, () -> isMyauMode());
+    public final BooleanValue autoScale = new BooleanValue("Auto Scale", true, () -> isMyauMode());
     public final PercentValue backgroundOpacity = new PercentValue("Background", 25, () -> isMyauMode());
     public final BooleanValue shadow = new BooleanValue("Shadow", true, () -> isMyauMode());
     public final ModeValue distanceMode = new ModeValue("Distance", 0, new String[]{"None", "Default", "Vape"}, () -> isMyauMode());

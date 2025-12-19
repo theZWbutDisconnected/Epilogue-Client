@@ -24,8 +24,8 @@ public class Scoreboard extends Module {
     private final Minecraft mc = Minecraft.getMinecraft();
     
     public final BooleanValue hide = new BooleanValue("Hide", false);
-    public final IntValue offsetX = new IntValue("OffsetX", 0, -1000, 200);
-    public final IntValue offsetY = new IntValue("OffsetY", 0, -600, 200);
+    public final IntValue offsetX = new IntValue("Offset X", 0, -1000, 200);
+    public final IntValue offsetY = new IntValue("Offset Y", 0, -600, 200);
     
     public static Scoreboard instance;
     private boolean isRenderingCustom = false;

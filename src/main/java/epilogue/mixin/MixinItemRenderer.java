@@ -61,14 +61,6 @@ public abstract class MixinItemRenderer {
                 animations.blockPosZ.getValue().doubleValue());
 
         switch (mode) {
-            case "1.8":
-                break;
-            case "Swing":
-                applySwingAnimation(swingProgress);
-                break;
-            case "Old":
-                applyOldAnimation(swingProgress);
-                break;
             case "Push":
                 applyPushAnimation(swingProgress);
                 break;
@@ -93,12 +85,6 @@ public abstract class MixinItemRenderer {
             case "Swonk":
                 applySwonkAnimation(swingProgress);
                 break;
-            case "Stella":
-                applyStellaAnimation(swingProgress);
-                break;
-            case "Small":
-                applySmallAnimation(swingProgress);
-                break;
             case "Edit":
                 applyEditAnimation(swingProgress);
                 break;
@@ -120,9 +106,6 @@ public abstract class MixinItemRenderer {
             case "Xiv":
                 applyXivAnimation(swingProgress);
                 break;
-            case "Winter":
-                applyWinterAnimation(swingProgress);
-                break;
             case "Yamato":
                 applyYamatoAnimation(swingProgress);
                 break;
@@ -131,9 +114,6 @@ public abstract class MixinItemRenderer {
                 break;
             case "SmallPush":
                 applySmallPushAnimation(swingProgress);
-                break;
-            case "Reverse":
-                applyReverseAnimation(swingProgress);
                 break;
             case "Invent":
                 applyInventAnimation(swingProgress);
@@ -165,19 +145,16 @@ public abstract class MixinItemRenderer {
             case "Smooth":
                 applySmoothAnimation(swingProgress);
                 break;
-            case "Jigsaw":
-                applyJigsawAnimation(swingProgress);
-                break;
             case "Tap1":
                 applyTap1Animation(swingProgress);
                 break;
             case "Tap2":
                 applyTap2Animation(swingProgress);
                 break;
-            case "Sigma3":
+            case "Sigma1":
                 applySigma3Animation(swingProgress);
                 break;
-            case "Sigma4":
+            case "Sigma2":
                 applySigma4Animation(swingProgress);
                 break;
         }

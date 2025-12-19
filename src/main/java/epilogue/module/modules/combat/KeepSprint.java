@@ -7,9 +7,9 @@ import net.minecraft.client.Minecraft;
 
 public class KeepSprint extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
-    public final PercentValue slowdown = new PercentValue("Slowdown", 0);
-    public final BooleanValue groundOnly = new BooleanValue("GroundOnly", false);
-    public final BooleanValue reachOnly = new BooleanValue("ReachOnly", false);
+    public final PercentValue slowdown = new PercentValue("Slow", 0);
+    public final BooleanValue groundOnly = new BooleanValue("Only Ground", false);
+    public final BooleanValue reachOnly = new BooleanValue("Only In Reach", false);
 
     public KeepSprint() {
         super("KeepSprint", false);

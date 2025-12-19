@@ -25,7 +25,7 @@ public class BedESP extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     public final CopyOnWriteArraySet<BlockPos> beds = new CopyOnWriteArraySet<>();
     public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Default", "Full"});
-    public final ModeValue color = new ModeValue("Color", 0, new String[]{"Custom", "Hud"});
+    public final ModeValue color = new ModeValue("Color", 0, new String[]{"Custom"});
     public final ColorValue customColorValue;
     public final PercentValue opacity;
     public final BooleanValue outline;
@@ -35,8 +35,6 @@ public class BedESP extends Module {
         switch (this.color.getValue()) {
             case 0:
                 return new java.awt.Color(this.customColorValue.getValue());
-            case 1:
-                return java.awt.Color.CYAN;
             default:
                 return new java.awt.Color(-1);
         }

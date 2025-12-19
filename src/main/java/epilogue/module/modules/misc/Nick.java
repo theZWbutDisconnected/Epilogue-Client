@@ -1,0 +1,33 @@
+package epilogue.module.modules.misc;
+
+import epilogue.enums.ChatColors;
+import epilogue.module.Module;
+import epilogue.value.values.BooleanValue;
+import epilogue.value.values.TextValue;
+import net.minecraft.client.Minecraft;
+
+import java.util.regex.Matcher;
+
+public class Nick extends Module {
+    private static final Minecraft mc = Minecraft.getMinecraft();
+    public final TextValue protectName = new TextValue("Name", "91av");
+    public final BooleanValue scoreboard = new BooleanValue("Scoreboard", true);
+    public final BooleanValue level = new BooleanValue("Level", true);
+
+    public Nick() {
+        super("Nick", false, true);
+    }
+
+    public String replaceNick(String input) {
+        if (input != null && mc.thePlayer != null) {
+            if (this.scoreboard.getValue() && input.matches("§7\\d{2}/\\d{2}/\\d{2}(?:\\d{2})?  ?§8.*")) {
+                input = input.replaceAll("§8", "§8§k").replaceAll("[^\\x00-\\x7F§]", "?");
+            }
+            return input.replaceAll(
+                    mc.thePlayer.getName(), Matcher.quoteReplacement(ChatColors.formatColor(this.protectName.getValue()))
+            );
+        } else {
+            return input;
+        }
+    }
+}

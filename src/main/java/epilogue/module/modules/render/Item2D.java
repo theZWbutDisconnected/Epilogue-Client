@@ -22,7 +22,7 @@ public class Item2D extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
     public final FloatValue size = new FloatValue("Size", 18.0F, 8.0F, 48.0F);
-    public final FloatValue maxDistance = new FloatValue("MaxDistance", 48.0F, 8.0F, 128.0F);
+    public final FloatValue maxDistance = new FloatValue("Max Distance", 48.0F, 8.0F, 128.0F);
 
     public Item2D() {
         super("Item2D", false);

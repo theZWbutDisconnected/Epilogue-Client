@@ -19,11 +19,11 @@ import java.util.Objects;
 public class Eagle extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private int sneakDelay = 0;
-    public final IntValue minDelay = new IntValue("MinDelay", 2, 0, 10);
-    public final IntValue maxDelay = new IntValue("MaxDelay", 3, 0, 10);
-    public final BooleanValue directionCheck = new BooleanValue("DirectionCheck", true);
-    public final BooleanValue pitchCheck = new BooleanValue("PitchCheck", true);
-    public final BooleanValue blocksOnly = new BooleanValue("BlocksOnly", true);
+    public final IntValue minDelay = new IntValue("Min Delay", 2, 0, 10);
+    public final IntValue maxDelay = new IntValue("Max Delay", 3, 0, 10);
+    public final BooleanValue directionCheck = new BooleanValue("Check Direction", true);
+    public final BooleanValue pitchCheck = new BooleanValue("Check Pitch", true);
+    public final BooleanValue blocksOnly = new BooleanValue("Only Blocks", true);
 
     private boolean canMoveSafely() {
         double[] offset = MoveUtil.predictMovement();

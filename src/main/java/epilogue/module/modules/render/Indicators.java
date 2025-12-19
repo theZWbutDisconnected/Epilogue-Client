@@ -27,7 +27,7 @@ public class Indicators extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     public final FloatValue scale = new FloatValue("Scale", 1.0f, 0.5f, 1.5f);
     public final FloatValue offset = new FloatValue("Offset", 50.0f, 0.0f, 255.0f);
-    public final BooleanValue directionCheck = new BooleanValue("DirectionCheck", true);
+    public final BooleanValue directionCheck = new BooleanValue("Check Direction", true);
     public final BooleanValue fireballs = new BooleanValue("Fireballs", true);
     public final BooleanValue pearls = new BooleanValue("Pearls", true);
     public final BooleanValue arrows = new BooleanValue("Arrows", true);

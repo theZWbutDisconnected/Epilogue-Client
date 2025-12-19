@@ -74,15 +74,15 @@ public class BedNuker extends Module {
     public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Legit", "Swap"});
     public final FloatValue range = new FloatValue("Range", 4.5F, 3.0F, 6.0F);
     public final PercentValue speed = new PercentValue("Speed", 0);
-    public final BooleanValue groundSpeed = new BooleanValue("GroundSpoof", false);
-    public final ModeValue ignoreVelocity = new ModeValue("IgnoreVelocity", 0, new String[]{"None", "Cancel", "Delay"});
+    public final BooleanValue groundSpeed = new BooleanValue("Ground Speed", false);
+    public final ModeValue ignoreVelocity = new ModeValue("Ignore Velocity", 0, new String[]{"None", "Cancel", "Delay"});
     public final BooleanValue surroundings = new BooleanValue("Surroundings", true);
-    public final BooleanValue toolCheck = new BooleanValue("ToolCheck", true);
+    public final BooleanValue toolCheck = new BooleanValue("Check Tool", true);
     public final BooleanValue whiteList = new BooleanValue("Whitelist", true);
     public final BooleanValue swing = new BooleanValue("Swing", true);
-    public final ModeValue moveFix = new ModeValue("MoveFix", 1, new String[]{"None", "Silent", "Strict"});
-    public final ModeValue showTarget = new ModeValue("ShowTarget", 1, new String[]{"None", "Default"});
-    public final ModeValue showProgress = new ModeValue("ShowProgress", 1, new String[]{"None", "Default"});
+    public final ModeValue moveFix = new ModeValue("Move Fix", 1, new String[]{"None", "Silent", "Strict"});
+    public final ModeValue showTarget = new ModeValue("Show", 1, new String[]{"None", "Default"});
+    public final ModeValue showProgress = new ModeValue("Progress", 1, new String[]{"None", "Default"});
 
     private void resetBreaking() {
         if (this.targetBed != null) {

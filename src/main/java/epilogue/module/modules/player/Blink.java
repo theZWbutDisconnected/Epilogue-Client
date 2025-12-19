@@ -12,8 +12,8 @@ import epilogue.value.values.IntValue;
 import epilogue.value.values.ModeValue;
 
 public class Blink extends Module {
-    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"DEFAULT", "PULSE"});
-    public final IntValue ticks = new IntValue("ticks", 20, 0, 1200);
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Default", "Pulse"});
+    public final IntValue ticks = new IntValue("Ticks", 20, 0, 1200);
 
     public Blink() {
         super("Blink", false);

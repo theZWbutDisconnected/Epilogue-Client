@@ -40,7 +40,7 @@ public class ChestView extends Module {
     
     private final Minecraft mc = Minecraft.getMinecraft();
     
-    private final IntValue bgAlpha = new IntValue("BackgroundAlpha", 120, 1, 255);
+    private final IntValue bgAlpha = new IntValue("Background Alpha", 120, 1, 255);
     
     private BlockPos currentContainerPos;
     private float[] cachedProjection;

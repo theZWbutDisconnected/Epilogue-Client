@@ -27,11 +27,11 @@ public class PartySpammer extends Module {
     public final TextValue command = new TextValue("Command", "/party invite {player}");
     public final FloatValue delay = new FloatValue("Delay", 5.0F, 1.0F, 60.0F);
     public final IntValue cooldown = new IntValue("Cooldown", 60, 10, 600);
-    public final BooleanValue ignoreSelf = new BooleanValue("IgnoreSelf", true);
+    public final BooleanValue ignoreSelf = new BooleanValue("Ignore Self", true);
     public final BooleanValue caseSensitive = new BooleanValue("CaseSensitive", false);
-    public final BooleanValue loopMode = new BooleanValue("LoopMode", false);
+    public final BooleanValue loopMode = new BooleanValue("Loop", false);
     public final TextValue filter = new TextValue("Filter", "");
-    public final BooleanValue useWhitelist = new BooleanValue("UseWhitelist", false);
+    public final BooleanValue useWhitelist = new BooleanValue("Use Whitelist", false);
     public final TextValue whitelist = new TextValue("Whitelist", "player1,player2,player3");
     public final BooleanValue debug = new BooleanValue("Debug", false);
 

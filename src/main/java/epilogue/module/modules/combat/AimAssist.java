@@ -25,17 +25,17 @@ import java.util.stream.Collectors;
 public class AimAssist extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private final TimerUtil timer = new TimerUtil();
-    public final FloatValue hSpeed = new FloatValue("HorizontalSpeed", 3.0F, 0.0F, 10.0F);
-    public final FloatValue vSpeed = new FloatValue("VerticalSpeed", 0.0F, 0.0F, 10.0F);
+    public final FloatValue hSpeed = new FloatValue("Horizontal Speed", 3.0F, 0.0F, 10.0F);
+    public final FloatValue vSpeed = new FloatValue("Vertical Speed", 0.0F, 0.0F, 10.0F);
     public final PercentValue smoothing = new PercentValue("Smoothing", 50);
     public final FloatValue range = new FloatValue("Range", 4.5F, 3.0F, 8.0F);
     public final IntValue fov = new IntValue("Fov", 90, 30, 360);
-    public final BooleanValue weaponOnly = new BooleanValue("WeaponsOnly", true);
-    public final BooleanValue allowTools = new BooleanValue("AllowTools", false, this.weaponOnly::getValue);
-    public final BooleanValue botChecks = new BooleanValue("BotCheck", true);
+    public final BooleanValue weaponOnly = new BooleanValue("Weapons Only", true);
+    public final BooleanValue allowTools = new BooleanValue("Allow Tools", false, this.weaponOnly::getValue);
+    public final BooleanValue botChecks = new BooleanValue("Bot Check", true);
     public final BooleanValue team = new BooleanValue("Teams", true);
     
-    public final ModeValue rotationMode = new ModeValue("RotationMode", 0, new String[]{"Normal", "OP-Rotation"});
+    public final ModeValue rotationMode = new ModeValue("Rotation Mode", 0, new String[]{"Normal", "OP Rotation"});
     public final ModeValue yawAlgorithm = new ModeValue("YawAlgorithm", 0, 
         new String[]{"Linear", "SmoothLinear", "EIO", "Skewed-Unimodal", "Physical-Simulation", "Simple-NeuralNetwork", "Recorded-Features"}, 
         () -> rotationMode.getModeString().equals("OP-Rotation"));
@@ -54,8 +54,8 @@ public class AimAssist extends Module {
               (yawAlgorithm.getModeString().equals("Recorded-Features") || 
                pitchAlgorithm.getModeString().equals("Recorded-Features")));
     
-    public final BooleanValue stopOnTarget = new BooleanValue("StopOnTarget", false);
-    public final IntValue delayTick = new IntValue("DelayTick", 0, 0, 5);
+    public final BooleanValue stopOnTarget = new BooleanValue("Stop On Target", false);
+    public final IntValue delayTick = new IntValue("Delay Tick", 0, 0, 5);
     
     private final OPRotationSystem opRotationSystem = new OPRotationSystem();
     private int tickCounter = 0;
@@ -83,8 +83,8 @@ public class AimAssist extends Module {
     }
 
     private boolean isInReach(EntityPlayer entityPlayer) {
-        Reach reach = (Reach) Epilogue.moduleManager.modules.get(Reach.class);
-        double distance = reach.isEnabled() ? (double) reach.range.getValue() : 3.0;
+        Range range = (Range) Epilogue.moduleManager.modules.get(Range.class);
+        double distance = range.isEnabled() ? (double) range.range.getValue() : 3.0;
         return RotationUtil.distanceToEntity(entityPlayer) <= distance;
     }
 

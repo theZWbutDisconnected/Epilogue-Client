@@ -32,7 +32,7 @@ public class InvWalk extends Module {
     private boolean keysPressed = false;
     private C16PacketClientStatus pendingStatus = null;
     private int delayTicks = 0;
-    public final ModeValue mode = new ModeValue("Mode", 1, new String[]{"Vanilla", "Legit", "Hypixel"});
+    public final ModeValue mode = new ModeValue("Mode", 1, new String[]{"Vanilla", "Legit", "StopOnClick"});
 
     public InvWalk() {
         super("InvWalk", false);

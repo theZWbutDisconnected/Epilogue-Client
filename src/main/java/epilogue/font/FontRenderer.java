@@ -1,6 +1,7 @@
 package epilogue.font;
 
 import epilogue.Epilogue;
+import epilogue.module.modules.render.FontRender;
 import net.minecraft.client.Minecraft;
 
 import java.awt.*;
@@ -81,9 +82,9 @@ public class FontRenderer {
     
     private static boolean isGlobalFontEnabled() {
         try {
-            epilogue.module.modules.render.GlobalFont globalFont =
-                (epilogue.module.modules.render.GlobalFont) Epilogue.moduleManager.getModule("GlobalFont");
-            return globalFont != null && globalFont.isEnabled();
+            FontRender fontRender =
+                (FontRender) Epilogue.moduleManager.getModule("FontRender");
+            return fontRender != null && fontRender.isEnabled();
         } catch (Exception e) {
             return false;
         }

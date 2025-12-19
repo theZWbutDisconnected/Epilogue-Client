@@ -8,8 +8,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class GhostHand extends Module {
-    public final BooleanValue teamsOnly = new BooleanValue("TeamOnly", true);
-    public final BooleanValue ignoreWeapons = new BooleanValue("IgnoreWeapons", false);
+    public final BooleanValue teamsOnly = new BooleanValue("Only Team", true);
+    public final BooleanValue ignoreWeapons = new BooleanValue("Ignore Weapons", false);
 
     public GhostHand() {
         super("GhostHand", false);

@@ -18,8 +18,8 @@ import net.minecraft.client.shader.Framebuffer;
 public class Session extends Module {
 
     private final Minecraft mc = Minecraft.getMinecraft();
-    public final IntValue offsetX = new IntValue("OffsetX", 5, -1000, 1000);
-    public final IntValue offsetY = new IntValue("OffsetY", 5, -1000, 1000);
+    public final IntValue offsetX = new IntValue("Offset X", 5, -1000, 1000);
+    public final IntValue offsetY = new IntValue("Offset Y", 5, -1000, 1000);
     private final long sessionStartTime;
 
     public Session() {

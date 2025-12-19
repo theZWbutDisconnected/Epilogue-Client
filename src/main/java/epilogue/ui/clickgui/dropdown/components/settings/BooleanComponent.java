@@ -65,7 +65,7 @@ public class BooleanComponent extends SettingComponent<BooleanValue> {
     @Override
     public void mouseClicked(int mouseX, int mouseY, int button) {
         if (button == 0 && isClickable(y + height) && isHoveringBox(mouseX, mouseY)) {
-            getSetting().setValue(!getSetting().getValue());
+            applyValueChange(!getSetting().getValue());
         }
     }
 

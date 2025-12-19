@@ -27,9 +27,9 @@ public class NoFall extends Module {
     private final TimerUtil scoreboardResetTimer = new TimerUtil();
     private boolean slowFalling = false;
     private boolean lastOnGround = false;
-    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"PACKET", "BLINK", "NO_GROUND", "SPOOF"});
-    public final FloatValue distance = new FloatValue("distance", 3.0F, 0.0F, 20.0F);
-    public final IntValue delay = new IntValue("delay", 0, 0, 10000);
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Packet", "Blink", "NoGround", "Spoof"});
+    public final FloatValue distance = new FloatValue("Distance", 3.0F, 0.0F, 20.0F);
+    public final IntValue delay = new IntValue("Delay", 0, 0, 10000);
 
     private boolean canTrigger() {
         return this.scoreboardResetTimer.hasTimeElapsed(3000) && this.packetDelayTimer.hasTimeElapsed(this.delay.getValue().longValue());

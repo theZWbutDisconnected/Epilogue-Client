@@ -6,6 +6,7 @@ import epilogue.event.EventManager;
 import epilogue.events.PickEvent;
 import epilogue.events.RaytraceEvent;
 import epilogue.events.Render3DEvent;
+import epilogue.module.modules.player.NoDebuff;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
@@ -20,7 +21,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import epilogue.module.modules.combat.Aura;
 import epilogue.module.modules.movement.ViewClip;
-import epilogue.module.modules.player.AntiDebuff;
 import epilogue.module.modules.player.GhostHand;
 import epilogue.module.modules.player.Scaffold;
 import epilogue.module.modules.render.NoHurtCam;
@@ -242,8 +242,8 @@ public abstract class MixinEntityRenderer {
     )
     private boolean y(EntityLivingBase entityLivingBase, Potion potion) {
         if (potion == Potion.blindness && Epilogue.moduleManager != null) {
-            AntiDebuff antiDebuff = (AntiDebuff) Epilogue.moduleManager.modules.get(AntiDebuff.class);
-            if (antiDebuff.isEnabled() && antiDebuff.blindness.getValue()) {
+            NoDebuff noDebuff = (NoDebuff) Epilogue.moduleManager.modules.get(NoDebuff.class);
+            if (noDebuff.isEnabled() && noDebuff.blindness.getValue()) {
                 return false;
             }
         }
@@ -259,8 +259,8 @@ public abstract class MixinEntityRenderer {
     )
     private boolean q(EntityLivingBase entityLivingBase, Potion potion) {
         if (potion == Potion.blindness && Epilogue.moduleManager != null) {
-            AntiDebuff antiDebuff = (AntiDebuff) Epilogue.moduleManager.modules.get(AntiDebuff.class);
-            if (antiDebuff.isEnabled() && antiDebuff.blindness.getValue()) {
+            NoDebuff noDebuff = (NoDebuff) Epilogue.moduleManager.modules.get(NoDebuff.class);
+            if (noDebuff.isEnabled() && noDebuff.blindness.getValue()) {
                 return false;
             }
         }
@@ -276,8 +276,8 @@ public abstract class MixinEntityRenderer {
     )
     private boolean c(EntityPlayerSP entityPlayerSP, Potion potion) {
         if (potion == Potion.confusion && Epilogue.moduleManager != null) {
-            AntiDebuff antiDebuff = (AntiDebuff) Epilogue.moduleManager.modules.get(AntiDebuff.class);
-            if (antiDebuff.isEnabled() && antiDebuff.nausea.getValue()) {
+            NoDebuff noDebuff = (NoDebuff) Epilogue.moduleManager.modules.get(NoDebuff.class);
+            if (noDebuff.isEnabled() && noDebuff.nausea.getValue()) {
                 return false;
             }
         }

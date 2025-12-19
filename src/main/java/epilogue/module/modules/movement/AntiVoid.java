@@ -23,8 +23,8 @@ public class AntiVoid extends Module {
     private boolean isInVoid = false;
     private boolean wasInVoid = false;
     private double[] lastSafePosition = null;
-    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"BLINK"});
-    public final FloatValue distance = new FloatValue("distance", 5.0F, 0.0F, 16.0F);
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Blink"});
+    public final FloatValue distance = new FloatValue("Distance", 5.0F, 0.0F, 16.0F);
 
     private void resetBlink() {
         Epilogue.blinkManager.setBlinkState(false, BlinkModules.ANTI_VOID);

@@ -1,8 +1,8 @@
 package epilogue.mixin;
 
 import epilogue.Epilogue;
-import epilogue.module.modules.misc.AntiObfuscate;
-import epilogue.module.modules.misc.NickHider;
+import epilogue.module.modules.misc.GhostHunter;
+import epilogue.module.modules.misc.Nick;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -24,12 +24,12 @@ public abstract class MixinFontRenderer {
         if (Epilogue.moduleManager == null) {
             return string;
         } else {
-            AntiObfuscate antiObfuscate = (AntiObfuscate) Epilogue.moduleManager.modules.get(AntiObfuscate.class);
+            GhostHunter antiObfuscate = (GhostHunter) Epilogue.moduleManager.modules.get(GhostHunter.class);
             if (antiObfuscate.isEnabled()) {
                 string = antiObfuscate.stripObfuscated(string);
             }
-            NickHider nickHider = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
-            return nickHider.isEnabled() ? nickHider.replaceNick(string) : string;
+            Nick nick = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
+            return nick.isEnabled() ? nick.replaceNick(string) : string;
         }
     }
 
@@ -43,12 +43,12 @@ public abstract class MixinFontRenderer {
         if (Epilogue.moduleManager == null) {
             return string;
         } else {
-            AntiObfuscate antiObfuscate = (AntiObfuscate) Epilogue.moduleManager.modules.get(AntiObfuscate.class);
+            GhostHunter antiObfuscate = (GhostHunter) Epilogue.moduleManager.modules.get(GhostHunter.class);
             if (antiObfuscate.isEnabled()) {
                 string = antiObfuscate.stripObfuscated(string);
             }
-            NickHider nickHider = (NickHider) Epilogue.moduleManager.modules.get(NickHider.class);
-            return nickHider.isEnabled() ? nickHider.replaceNick(string) : string;
+            Nick nick = (Nick) Epilogue.moduleManager.modules.get(Nick.class);
+            return nick.isEnabled() ? nick.replaceNick(string) : string;
         }
     }
 
