@@ -1,0 +1,7 @@
+{
+  "package": "epilogue.mixin",
+  "plugin": "epilogue.init.FMLLoadingPlugin",
+  "refmap": "mixins.epilogue.refmap.json",
+  "minVersion": "0.7",
+  "compatibilityLevel": "JAVA_8"
+}

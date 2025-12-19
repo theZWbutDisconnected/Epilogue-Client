@@ -1,0 +1,80 @@
+package epilogue.mixin;
+
+import epilogue.Epilogue;
+import epilogue.management.RotationState;
+import epilogue.module.modules.render.Item2D;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+@SideOnly(Side.CLIENT)
+@Mixin({RenderManager.class})
+public abstract class MixinRenderManager {
+    @Unique
+    private float _prevRenderYawOffset;
+    @Unique
+    private float _renderYawOffset;
+    @Unique
+    private float _prevRotationYawHead;
+    @Unique
+    private float _rotationYawHead;
+    @Unique
+    private float _prevRotationPitch;
+    @Unique
+    private float _rotationPitch;
+
+    @Inject(
+            method = {"renderEntityStatic"},
+            at = {@At("HEAD")},
+            cancellable = true
+    )
+    private void renderEntityStatic(Entity entity, float float2, boolean boolean3, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+        if (entity instanceof EntityItem && Epilogue.moduleManager != null) {
+            Item2D item2D = (Item2D) Epilogue.moduleManager.modules.get(Item2D.class);
+            if (item2D != null && item2D.isEnabled()) {
+                callbackInfoReturnable.setReturnValue(false);
+                return;
+            }
+        }
+
+        if (entity instanceof EntityPlayerSP && RotationState.isRotated(1)) {
+            EntityPlayerSP entityPlayerSP = (EntityPlayerSP) entity;
+            this._prevRenderYawOffset = entityPlayerSP.prevRenderYawOffset;
+            this._renderYawOffset = entityPlayerSP.renderYawOffset;
+            this._prevRotationYawHead = entityPlayerSP.prevRotationYawHead;
+            this._rotationYawHead = entityPlayerSP.rotationYawHead;
+            this._prevRotationPitch = entityPlayerSP.prevRotationPitch;
+            this._rotationPitch = entityPlayerSP.rotationPitch;
+            entityPlayerSP.prevRenderYawOffset = RotationState.getPrevRenderYawOffset();
+            entityPlayerSP.renderYawOffset = RotationState.getRenderYawOffset();
+            entityPlayerSP.prevRotationYawHead = RotationState.getPrevRotationYawHead();
+            entityPlayerSP.rotationYawHead = RotationState.getRotationYawHead();
+            entityPlayerSP.prevRotationPitch = RotationState.getPrevRotationPitch();
+            entityPlayerSP.rotationPitch = RotationState.getRotationPitch();
+        }
+    }
+
+    @Inject(
+            method = {"renderEntityStatic"},
+            at = {@At("RETURN")}
+    )
+    private void renderEntityStaticPost(Entity entity, float float2, boolean boolean3, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+        if (entity instanceof EntityPlayerSP && RotationState.isRotated(1)) {
+            EntityPlayerSP entityPlayerSP = (EntityPlayerSP) entity;
+            entityPlayerSP.prevRenderYawOffset = this._prevRenderYawOffset;
+            entityPlayerSP.renderYawOffset = this._renderYawOffset;
+            entityPlayerSP.prevRotationYawHead = this._prevRotationYawHead;
+            entityPlayerSP.rotationYawHead = this._rotationYawHead;
+            entityPlayerSP.prevRotationPitch = this._prevRotationPitch;
+            entityPlayerSP.rotationPitch = this._rotationPitch;
+        }
+    }
+}

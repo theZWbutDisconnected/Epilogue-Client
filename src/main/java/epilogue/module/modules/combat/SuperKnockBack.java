@@ -1,0 +1,104 @@
+package epilogue.module.modules.combat;
+
+import epilogue.event.EventTarget;
+import epilogue.events.AttackEvent;
+import epilogue.events.TickEvent;
+import epilogue.module.Module;
+import epilogue.value.values.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.network.play.client.C0BPacketEntityAction;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
+
+public class SuperKnockBack extends Module {
+    private static final Minecraft mc = Minecraft.getMinecraft();
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Legit", "LegitFast", "LessPacket", "Packet", "DoublePacket"});
+    public final BooleanValue intelligent = new BooleanValue("Intelligent", false);
+    public final BooleanValue onlyGround = new BooleanValue("OnlyGound", true);
+    private boolean shouldSprintReset;
+    private EntityLivingBase target;
+
+    public SuperKnockBack() {
+        super("MoreKB", false);
+        this.shouldSprintReset = false;
+        this.target = null;
+    }
+
+    @EventTarget
+    public void onAttack(AttackEvent event) {
+        if (!this.isEnabled()) {
+            return;
+        }
+        Entity targetEntity = event.getTarget();
+        if (targetEntity != null && targetEntity instanceof EntityLivingBase) {
+            this.target = (EntityLivingBase) targetEntity;
+        }
+    }
+
+    @EventTarget
+    public void onTick(TickEvent event) {
+        if (!this.isEnabled()) {
+            return;
+        }
+        if (this.mode.getValue() == 1) {
+            if (this.target != null && this.isMoving()) {
+                if ((this.onlyGround.getValue() && mc.thePlayer.onGround) || !this.onlyGround.getValue()) {
+                    mc.thePlayer.sprintingTicksLeft = 0;
+                }
+                this.target = null;
+            }
+            return;
+        }
+        EntityLivingBase entity = null;
+        if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY && mc.objectMouseOver.entityHit instanceof EntityLivingBase) {
+            entity = (EntityLivingBase) mc.objectMouseOver.entityHit;
+        }
+        if (entity == null) {
+            return;
+        }
+        double x = mc.thePlayer.posX - entity.posX;
+        double z = mc.thePlayer.posZ - entity.posZ;
+        float calcYaw = (float) (Math.atan2(z, x) * 180.0 / Math.PI - 90.0);
+        float diffY = Math.abs(MathHelper.wrapAngleTo180_float(calcYaw - entity.rotationYawHead));
+        if (this.intelligent.getValue() && diffY > 120.0F) {
+            return;
+        }
+        if (entity.hurtTime == 10) {
+            switch (this.mode.getValue()) {
+                case 0:
+                    this.shouldSprintReset = true;
+                    if (mc.thePlayer.isSprinting()) {
+                        mc.thePlayer.setSprinting(false);
+                        mc.thePlayer.setSprinting(true);
+                    }
+                    this.shouldSprintReset = false;
+                    break;
+                case 2:
+                    if (mc.thePlayer.isSprinting()) {
+                        mc.thePlayer.setSprinting(false);
+                    }
+                    mc.getNetHandler().addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                    mc.thePlayer.setSprinting(true);
+                    break;
+                case 3:
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.STOP_SPRINTING));
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                    mc.thePlayer.setSprinting(true);
+                    break;
+                case 4:
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.STOP_SPRINTING));
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.STOP_SPRINTING));
+                    mc.thePlayer.sendQueue.addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                    mc.thePlayer.setSprinting(true);
+                    break;
+            }
+        }
+    }
+
+    private boolean isMoving() {
+        return mc.thePlayer.moveForward != 0.0F || mc.thePlayer.moveStrafing != 0.0F;
+    }
+}
