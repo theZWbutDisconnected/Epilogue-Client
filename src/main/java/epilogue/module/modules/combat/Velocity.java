@@ -40,7 +40,6 @@ public class Velocity extends Module {
     private boolean delayActive = false;
     private long lastAttackTime = 0L;
     private long blinkStartTime = System.currentTimeMillis();
-    private final long blinkDuration = 95L;
     private long reverseStartTime = 0L;
     private boolean jumpFlag = false;
     private int blinkTicks = 0;
@@ -73,6 +72,7 @@ public class Velocity extends Module {
     public final IntValue reduceHurtTime = new IntValue("Reduce HurtTime", 10, 1, 10, () -> this.mode.getValue() == 2);
     public final FloatValue reduceFactor = new FloatValue("Reduce Factor", 0.6f, 0.1f, 1.0f, () -> this.mode.getValue() == 2);
     public final BooleanValue blink = new BooleanValue("Blink", true, () -> this.mode.getValue() == 2);
+    public final IntValue blinkDuration = new IntValue("BlinkDuration", 50, 0, 95, () -> this.mode.getValue() == 2);
     public final BooleanValue showBlinkTicks = new BooleanValue("Show Blink Ticks", false, () -> this.mode.getValue() == 2 && this.blink.getValue());
     public final BooleanValue airDelay = new BooleanValue("Air Delay", false, () -> this.mode.getValue() == 1);
 
@@ -219,7 +219,7 @@ public class Velocity extends Module {
             }
 
             if (this.blink.getValue()) {
-                if (System.currentTimeMillis() - this.blinkStartTime < this.blinkDuration) {
+                if (System.currentTimeMillis() - this.blinkStartTime < this.blinkDuration.getValue()) {
                     Epilogue.blinkManager.setBlinkState(true, BlinkModules.BLINK);
                     this.blinkTicks++;
                 } else {
