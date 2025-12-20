@@ -93,18 +93,14 @@ dependencies {
 
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
-    "downloadLibs"("org.bytedeco:ffmpeg:6.0-1.5.9")
-    "downloadLibs"("org.bytedeco:ffmpeg:6.0-1.5.9:windows-x86_64")
-    "downloadLibs"("org.bytedeco:opencv:4.7.0-1.5.9")
-    "downloadLibs"("org.bytedeco:opencv:4.7.0-1.5.9:windows-x86_64")
-    "downloadLibs"("commons-io:commons-io:2.6")
+//    "downloadLibs"("org.bytedeco:ffmpeg:6.0-1.5.9")
+//    "downloadLibs"("org.bytedeco:ffmpeg:6.0-1.5.9:windows-x86_64")
+//    "downloadLibs"("org.bytedeco:opencv:4.7.0-1.5.9")
+//    "downloadLibs"("org.bytedeco:opencv:4.7.0-1.5.9:windows-x86_64")
+    "downloadLibs"("commons-io:commons-io:2.14.0")
     "downloadLibs"("org.json:json:20250517")
     "downloadLibs"("com.google.code.gson:gson:2.8.9")
-    "downloadLibs"("com.github.CCBlueX:Elixir:1.2.6") {
-        exclude(module = "kotlin-stdlib")
-        exclude(module = "authlib")
-    }
-    
+    "downloadLibs"("org.apache.httpcomponents:httpclient:4.5.13")
 
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     shadowImpl(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))

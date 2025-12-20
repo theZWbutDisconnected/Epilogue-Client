@@ -104,18 +104,18 @@
   },
   "AutoBlockIn": {
     "toggled": false,
-    "key": 0,
+    "key": 44,
     "hidden": false,
     "Range": 4.5,
     "Speed": 100,
     "Place Delay": 0,
     "Rotation Tolerance": 100,
-    "Show Progress": true,
+    "Show Progress": false,
     "Move Fix": "Silent"
   },
   "BedNuker": {
     "toggled": false,
-    "key": 0,
+    "key": 45,
     "hidden": false,
     "Mode": "Legit",
     "Range": 4.5,

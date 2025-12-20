@@ -1,6 +1,8 @@
 package epilogue.ui.mainmenu;
 
 import epilogue.util.render.RenderUtil;
+import epilogue.ui.mainmenu.altmanager.utils.Notification;
+
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiOptions;
 import net.minecraft.client.gui.GuiScreen;
@@ -226,7 +228,7 @@ public class GuiMainMenu extends GuiScreen {
                 return;
             }
             if (isHovering(mouseX, mouseY, startX + (size + gap) * 2, y, size, size)) {
-                this.mc.displayGuiScreen(new epilogue.ui.mainmenu.altmanager.GuiAltManager(this));
+                this.mc.displayGuiScreen(new epilogue.ui.mainmenu.altmanager.GuiAltManager(this, null));
                 return;
             }
             if (isHovering(mouseX, mouseY, startX + (size + gap) * 3, y, size, size)) {
