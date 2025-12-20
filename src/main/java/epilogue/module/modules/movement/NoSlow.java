@@ -20,7 +20,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
@@ -42,7 +41,7 @@ public class NoSlow
     public final BooleanValue swordSprint = new BooleanValue("Sword Sprint", true, () -> this.swordMode.getValue() != 0);
     public final IntValue swordBlinkDelay = new IntValue("Sword Blink Delay", 1, 1, 10, () -> this.swordMode.getValue() == 2);
     public final IntValue swordBlinkDuration = new IntValue("Sword Blink Duration", 2, 1, 5, () -> this.swordMode.getValue() == 2);
-    public final ModeValue foodMode = new ModeValue("Food Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink", "Grim"});
+    public final ModeValue foodMode = new ModeValue("Food Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink", "Test"});
     public final PercentValue foodMotion = new PercentValue("Food Motion", 100, () -> this.foodMode.getValue() != 0);
     public final BooleanValue foodSprint = new BooleanValue("Food Sprint", true, () -> this.foodMode.getValue() != 0);
     public final IntValue foodBlinkDelay = new IntValue("Food Blink Delay", 2, 1, 10, () -> this.foodMode.getValue() == 3);
@@ -87,7 +86,7 @@ public class NoSlow
         return this.foodMode.getValue() != 0 && ItemUtil.isEating();
     }
 
-    public boolean isGrimFoodMode() {
+    public boolean isTestFoodMode() {
         return this.foodMode.getValue() == 4 && ItemUtil.isEating();
     }
 
@@ -193,8 +192,8 @@ public class NoSlow
             }
         }
 
-        boolean isGrimActive = this.isGrimFoodMode();
-        if (isGrimActive) {
+        boolean isTestActive = this.isTestFoodMode();
+        if (isTestActive) {
             boolean isMovingForward;
             if (this.onGroundTicks % 3 != 0 && NoSlow.mc.thePlayer.getItemInUseCount() >= 4) {
                 boolean playerWantsToSprint = NoSlow.mc.gameSettings.keyBindSprint.isKeyDown();
