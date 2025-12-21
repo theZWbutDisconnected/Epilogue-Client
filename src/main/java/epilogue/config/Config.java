@@ -5,6 +5,7 @@ import java.io.*;
 import java.util.ArrayList;
 
 import com.google.gson.*;
+import epilogue.config.AccountConfig;
 import epilogue.Epilogue;
 import epilogue.mixin.IAccessorMinecraft;
 import epilogue.module.Module;
@@ -49,6 +50,13 @@ public class Config {
             }
             
             JsonObject jsonObject = parsed.getAsJsonObject();
+
+            JsonElement accountsElement = jsonObject.get("accountManager");
+            if (accountsElement != null && accountsElement.isJsonObject()) {
+                AccountConfig.load(accountsElement.getAsJsonObject());
+            } else {
+                AccountConfig.load(null);
+            }
             
             for (Module module : Epilogue.moduleManager.modules.values()) {
                 JsonElement moduleObj = jsonObject.get(module.getName());
@@ -106,6 +114,8 @@ public class Config {
             }
             
             JsonObject object = new JsonObject();
+
+            object.add("accountManager", AccountConfig.save());
 
             for (Module module : Epilogue.moduleManager.modules.values()) {
                 JsonObject moduleObject = new JsonObject();

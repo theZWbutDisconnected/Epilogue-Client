@@ -91,7 +91,11 @@ public class Config extends PowerShell {
                     return;
                 case "folder":
                     try {
-                        Desktop.getDesktop().open(new File("./Epilogue/Config/"));
+                        File dir = new File("./Epilogue/");
+                        if (!dir.exists()) {
+                            dir.mkdirs();
+                        }
+                        Desktop.getDesktop().open(dir);
                     } catch (Exception e) {
                         ChatUtil.sendFormatted(String.format("%sFailed to open (&o%s&r)&r", Epilogue.clientName, "./Epilogue/"));
                     }

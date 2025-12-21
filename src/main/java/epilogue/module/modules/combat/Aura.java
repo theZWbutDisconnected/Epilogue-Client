@@ -46,6 +46,8 @@ import java.util.ArrayList;
 
 public class Aura extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    public static boolean rotationBlocked = false;
+    public static boolean attackBlocked = false;
     private final TimerUtil timer = new TimerUtil();
     public AttackData target = null;
     private int switchTick = 0;
@@ -91,6 +93,9 @@ public class Aura extends Module {
     }
 
     private boolean performAttack(float yaw, float pitch) {
+        if (attackBlocked) {
+            return false;
+        }
         if (!Epilogue.playerStateManager.digging && !Epilogue.playerStateManager.placing) {
             if (this.isPlayerBlocking() && this.autoBlock.getValue() != 1) {
                 return false;
@@ -154,6 +159,9 @@ public class Aura extends Module {
     }
 
     private boolean canAttack() {
+        if (attackBlocked) {
+            return false;
+        }
         if (this.inventoryCheck.getValue() && mc.currentScreen instanceof GuiContainer) {
             return false;
         } else if (!(java.lang.Boolean) this.weaponsOnly.getValue()
@@ -200,7 +208,7 @@ public class Aura extends Module {
                 .anyMatch(
                         entity -> entity instanceof EntityLivingBase
                                 && this.isValidTarget((EntityLivingBase) entity)
-                                && this.isInBlockRange((EntityLivingBase) entity)
+                                && this.isInRange((EntityLivingBase) entity)
                 );
     }
 
@@ -385,7 +393,7 @@ public class Aura extends Module {
                             Epilogue.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                             this.fakeBlockState = false;
                             break;
-                    }
+                        }
                         case 1: {
                             if (this.hasValidTarget()) {
                                 if (!this.isPlayerBlocking() && !Epilogue.playerStateManager.digging && !Epilogue.playerStateManager.placing) {
@@ -505,7 +513,7 @@ public class Aura extends Module {
                 }
                 boolean attacked = false;
                 if (this.isBoxInSwingRange(this.target.getBox())) {
-                    if (this.rotations.getValue() == 2 || this.rotations.getValue() == 3) {
+                    if (!rotationBlocked && (this.rotations.getValue() == 2 || this.rotations.getValue() == 3)) {
                         float[] rotations = RotationUtil.getRotationsToBox(
                                 this.target.getBox(),
                                 event.getYaw(),
