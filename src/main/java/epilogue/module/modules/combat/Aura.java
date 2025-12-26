@@ -48,6 +48,7 @@ public class Aura extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     public static boolean rotationBlocked = false;
     public static boolean attackBlocked = false;
+    public static boolean swingBlocked = false;
     private final TimerUtil timer = new TimerUtil();
     public AttackData target = null;
     private int switchTick = 0;
@@ -62,7 +63,7 @@ public class Aura extends Module {
     public final ModeValue sort;
     public final ModeValue autoBlock;
     public final BooleanValue autoBlockRequirePress;
-    public final FloatValue autoBlockCPS;
+    public final IntValue autoBlockCPS;
     public final FloatValue autoBlockRange;
     public final FloatValue swingRange;
     public final FloatValue attackRange;
@@ -103,7 +104,9 @@ public class Aura extends Module {
                 return false;
             } else {
                 this.attackDelayMS = this.attackDelayMS + this.getAttackDelay();
-                mc.thePlayer.swingItem();
+                if (!swingBlocked) {
+                    mc.thePlayer.swingItem();
+                }
                 if ((this.rotations.getValue() != 0 || !this.isBoxInAttackRange(this.target.getBox()))
                         && RotationUtil.rayTrace(this.target.getBox(), yaw, pitch, this.attackRange.getValue()) == null) {
                     return false;
@@ -295,7 +298,7 @@ public class Aura extends Module {
                 "AutoBlock Mode", 4, new String[]{"NONE", "Vanilla", "Fake", "HypixelA", "HypixelB"}
         );
         this.autoBlockRequirePress = new BooleanValue("AutoBlock Only Right Click", false, () -> this.mode.equals("NONE") || this.mode.equals("Fake"));
-        this.autoBlockCPS = new FloatValue("AutoBlock CPS", 10.0F, 1.0F, 10.0F);
+        this.autoBlockCPS = new IntValue("AutoBlock CPS", 10, 1, 10);
         this.autoBlockRange = new FloatValue("AutoBlock Range", 6.0F, 3.0F, 8.0F);
         this.swingRange = new FloatValue("Swing Range", 3.5F, 3.0F, 6.0F);
         this.attackRange = new FloatValue("Attack Range", 3.0F, 3.0F, 6.0F);

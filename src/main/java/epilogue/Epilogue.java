@@ -139,6 +139,7 @@ public class Epilogue {
         handler.powerShells.add(new Denick());
         handler.powerShells.add(new Friend());
         handler.powerShells.add(new Help());
+        handler.powerShells.add(new Hide());
         handler.powerShells.add(new Name());
         handler.powerShells.add(new Item());
         handler.powerShells.add(new Player());
