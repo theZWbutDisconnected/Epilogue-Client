@@ -1,6 +1,7 @@
 package epilogue.module.modules.player;
 
 import epilogue.Epilogue;
+import epilogue.enums.BlinkModules;
 import epilogue.event.EventTarget;
 import epilogue.event.types.EventType;
 import epilogue.event.types.Priority;
@@ -72,6 +73,13 @@ public class Scaffold extends Module {
     private boolean shouldKeepY = false;
     private boolean towering = false;
     private EnumFacing targetFacing = null;
+    private int safeStuckTicks = 0;
+    private int safeStuckDelayTicks = 0;
+    private double safePrevMotionY = 0.0;
+    private double savedMotionX;
+    private double savedMotionY;
+    private double savedMotionZ;
+    private boolean safeStuckActive = false;
     public final ModeValue rotationMode = new ModeValue("Rotations", 2, new String[]{"None", "Vanilla", "Backwards", "Hypixel"});
     public final ModeValue keepY = new ModeValue("Mode", 3, new String[]{"None", "KeepY", "ExtraBlockKeepY", "Telly"});
     public final ModeValue tower = new ModeValue("Tower", 3, new String[]{"None", "Vanilla", "ExtraBlock", "Telly"});
@@ -83,6 +91,8 @@ public class Scaffold extends Module {
     public final BooleanValue keepYonPress = new BooleanValue("Keep Y On Press", false, () -> this.keepY.getValue() != 0);
     public final BooleanValue multiplace = new BooleanValue("0 Tick Place", false);
     public final BooleanValue safeWalk = new BooleanValue("Safe Walk", false);
+    public final BooleanValue safe = new BooleanValue("Safe", false, () -> this.tower.getValue() == 3);
+    public final IntValue safeStuckDelayTicksValue = new IntValue("Safe Delay Ticks", 2, 0, 10, () -> this.tower.getValue() == 3 && this.safe.getValue());
     public final BooleanValue swing = new BooleanValue("Swing", false);
     public final BooleanValue itemSpoof = new BooleanValue("Item Spoof", true);
     public final BooleanValue blockCounter = new BooleanValue("Block Counter", false);
@@ -260,6 +270,30 @@ public class Scaffold extends Module {
     @EventTarget(Priority.HIGH)
     public void onUpdate(UpdateEvent event) {
         if (this.isEnabled() && event.getType() == EventType.PRE) {
+            if (this.safeStuckDelayTicks > 0) {
+                this.safeStuckDelayTicks--;
+                if (this.safeStuckDelayTicks <= 0) {
+                    this.safeStuckTicks = 1;
+                }
+            }
+            if (this.safeStuckTicks > 0) {
+                if (!this.safeStuckActive) {
+                    this.savedMotionX = mc.thePlayer.motionX;
+                    this.savedMotionY = mc.thePlayer.motionY;
+                    this.savedMotionZ = mc.thePlayer.motionZ;
+                    this.safeStuckActive = true;
+                }
+                Epilogue.blinkManager.setBlinkState(true, BlinkModules.BLINK);
+                mc.thePlayer.motionX = 0.0;
+                mc.thePlayer.motionZ = 0.0;
+                mc.thePlayer.motionY = 0.0;
+            } else if (this.safeStuckActive) {
+                Epilogue.blinkManager.setBlinkState(false, BlinkModules.BLINK);
+                mc.thePlayer.motionX = this.savedMotionX;
+                mc.thePlayer.motionZ = this.savedMotionZ;
+                mc.thePlayer.motionY = this.savedMotionY;
+                this.safeStuckActive = false;
+            }
             updateBPS();
             updateScaffoldData();
 
@@ -484,6 +518,11 @@ public class Scaffold extends Module {
     @EventTarget
     public void onStrafe(StrafeEvent event) {
         if (this.isEnabled()) {
+            if (this.safeStuckTicks > 0) {
+                event.setForward(0.0F);
+                event.setStrafe(0.0F);
+                return;
+            }
             if ((this.keepY.getValue() == 3 || this.tower.getValue() != 0)
                     && mc.gameSettings.keyBindJump.isKeyDown()
                     && ItemUtil.isHoldingBlock()) {
@@ -636,6 +675,13 @@ public class Scaffold extends Module {
     @EventTarget
     public void onMoveInput(MoveInputEvent event) {
         if (this.isEnabled()) {
+            if (this.safeStuckTicks > 0) {
+                mc.thePlayer.movementInput.moveForward = 0.0f;
+                mc.thePlayer.movementInput.moveStrafe = 0.0f;
+                mc.thePlayer.movementInput.jump = false;
+                mc.thePlayer.movementInput.sneak = false;
+                return;
+            }
             if (this.moveFix.getValue() == 1
                     && RotationState.isActived()
                     && RotationState.getPriority() == 3.0F
@@ -651,6 +697,12 @@ public class Scaffold extends Module {
     @EventTarget
     public void onLivingUpdate(LivingUpdateEvent event) {
         if (this.isEnabled()) {
+            if (this.safeStuckTicks > 0) {
+                mc.thePlayer.motionX = 0.0;
+                mc.thePlayer.motionY = 0.0;
+                mc.thePlayer.motionZ = 0.0;
+                this.safeStuckTicks--;
+            }
             float speed = this.getSpeed();
             if (speed != 1.0F) {
                 if (mc.thePlayer.movementInput.moveForward != 0.0F && mc.thePlayer.movementInput.moveStrafe != 0.0F) {
@@ -662,6 +714,28 @@ public class Scaffold extends Module {
             }
             if (this.shouldStopSprint()) {
                 mc.thePlayer.setSprinting(false);
+            }
+
+            if (this.safe.getValue() && this.tower.getValue() == 3 && mc.gameSettings.keyBindJump.isKeyDown()) {
+                float moveYaw = this.getCurrentYaw();
+                boolean diagonal = this.isDiagonal(moveYaw);
+                if (diagonal && !mc.thePlayer.onGround) {
+                    double my = mc.thePlayer.motionY;
+                    if (this.safePrevMotionY > 0.0 && my <= 0.0) {
+                        double mx = mc.thePlayer.motionX;
+                        double mz = mc.thePlayer.motionZ;
+                        double motionXZSpeed = Math.sqrt(mx * mx + mz * mz);
+                        double motionXZSpeedBps = motionXZSpeed * 20.0;
+                        if (this.safeStuckDelayTicks <= 0 && this.safeStuckTicks <= 0 && motionXZSpeedBps >= 4.67) {
+                            this.safeStuckDelayTicks = safeStuckDelayTicksValue.getValue();
+                        }
+                    }
+                    this.safePrevMotionY = my;
+                } else {
+                    this.safePrevMotionY = mc.thePlayer.motionY;
+                }
+            } else {
+                this.safePrevMotionY = mc.thePlayer.motionY;
             }
         }
     }
@@ -759,6 +833,10 @@ public class Scaffold extends Module {
         this.towerTick = 0;
         this.towerDelay = 0;
         this.towering = false;
+        this.safeStuckTicks = 0;
+        this.safeStuckDelayTicks = 0;
+        this.safePrevMotionY = 0.0;
+        this.safeStuckActive = false;
 
         this.lastBPSUpdateTime = System.currentTimeMillis();
         this.lastX = mc.thePlayer.posX;
@@ -776,6 +854,18 @@ public class Scaffold extends Module {
         if (mc.thePlayer != null && this.lastSlot != -1) {
             mc.thePlayer.inventory.currentItem = this.lastSlot;
         }
+        if (this.safeStuckActive && mc.thePlayer != null) {
+            Epilogue.blinkManager.setBlinkState(false, BlinkModules.BLINK);
+            mc.thePlayer.motionX = this.savedMotionX;
+            mc.thePlayer.motionZ = this.savedMotionZ;
+            mc.thePlayer.motionY = this.savedMotionY;
+        } else {
+            Epilogue.blinkManager.setBlinkState(false, BlinkModules.BLINK);
+        }
+        this.safeStuckTicks = 0;
+        this.safeStuckDelayTicks = 0;
+        this.safePrevMotionY = 0.0;
+        this.safeStuckActive = false;
         ModuleStateManager.getInstance().setModuleState("Scaffold", false);
     }
 
