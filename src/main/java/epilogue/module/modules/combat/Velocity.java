@@ -46,7 +46,6 @@ public class Velocity extends Module {
     private boolean delayedVelocityActive = false;
     private int attackReduceTicksLeft = 0;
     private boolean attackReduceApplied = false;
-
     private boolean mixReduceHasReceivedVelocity = false;
     private boolean mixReduceIsFallDamage = false;
     private Entity mixReduceTarget = null;
