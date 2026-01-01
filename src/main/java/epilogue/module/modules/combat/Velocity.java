@@ -3,6 +3,7 @@ package epilogue.module.modules.combat;
 import com.google.common.base.CaseFormat;
 import epilogue.Epilogue;
 import epilogue.enums.DelayModules;
+import epilogue.event.EventManager;
 import epilogue.event.EventTarget;
 import epilogue.event.types.EventType;
 import epilogue.events.*;
@@ -15,8 +16,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.Packet;
-import net.minecraft.network.play.INetHandlerPlayClient;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
@@ -193,7 +192,7 @@ public class Velocity extends Module {
 
     private void queueDelayedVelocity(PacketEvent event, S12PacketEntityVelocity packet, int ticks) {
         Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
-        Epilogue.delayManager.delayedPacket.offer((Packet<INetHandlerPlayClient>) (Packet<?>) packet);
+        Epilogue.delayManager.delayedPacket.offer(packet);
         event.setCancelled(true);
         this.startDelayedVelocity(ticks);
     }
@@ -238,8 +237,6 @@ public class Velocity extends Module {
         if (aura == null || !aura.isEnabled()) {
             return;
         }
-        if (this.attackReduceTicksLeft <= 0) {
-        }
         this.attackReduceTicksLeft = 1;
         Aura.attackBlocked = true;
         Aura.swingBlocked = true;
@@ -260,8 +257,6 @@ public class Velocity extends Module {
             if (attacking) {
                 this.mixTestReducePending = true;
                 this.mixTestReduceHitOnGround = mc.thePlayer.onGround;
-
-            } else {
             }
         }
 
@@ -413,7 +408,7 @@ public class Velocity extends Module {
 
             if (this.mode.getValue() == 1 && this.airDelay.getValue() && !mc.thePlayer.onGround) {
                 Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
-                Epilogue.delayManager.delayedPacket.offer((Packet<INetHandlerPlayClient>) (Packet<?>) packet);
+                Epilogue.delayManager.delayedPacket.offer(packet);
                 event.setCancelled(true);
                 this.startDelayedVelocity(airDelayTicks.getValue());
                 return;
@@ -468,14 +463,10 @@ public class Velocity extends Module {
                 if (this.mixTestReduceHitOnGround) {
                     mc.thePlayer.jump();
                 }
-
-                double beforeX = mc.thePlayer.motionX;
-                double beforeZ = mc.thePlayer.motionZ;
                 mc.thePlayer.motionX *= 0.6D;
                 mc.thePlayer.motionZ *= 0.6D;
                 mc.thePlayer.setSprinting(false);
                 this.mixTestReduceRestoreSprintNextTick = true;
-
                 this.mixTestReducePending = false;
             }
 
@@ -520,7 +511,7 @@ public class Velocity extends Module {
                                 mc.thePlayer.stopUsingItem();
                             }
 
-                            Epilogue.eventManager.call(new AttackEvent(t));
+                            EventManager.call(new AttackEvent(t));
 
                             mc.getNetHandler().addToSendQueue(new C0APacketAnimation());
                             mc.getNetHandler().addToSendQueue(new C02PacketUseEntity(t, C02PacketUseEntity.Action.ATTACK));
@@ -551,9 +542,6 @@ public class Velocity extends Module {
 
                             this.mixReduceHasReceivedVelocity = false;
                         }
-                    }
-
-                    if (this.mixReduceHasReceivedVelocity) {
                     }
                 }
             }
@@ -694,7 +682,6 @@ public class Velocity extends Module {
 
     @Override
     public void onEnabled() {
-
         this.pendingExplosion = false;
         this.allowNext = true;
         this.chanceCounter = 0;
@@ -723,7 +710,6 @@ public class Velocity extends Module {
 
     @Override
     public void onDisabled() {
-
         this.pendingExplosion = false;
         this.allowNext = true;
         this.chanceCounter = 0;
@@ -740,7 +726,6 @@ public class Velocity extends Module {
         if (this.attackReduceTicksLeft > 0) {
             if (this.attackReduceApplied) {
                 Aura.attackBlocked = false;
-
                 Aura.swingBlocked = false;
             }
         }
@@ -750,7 +735,6 @@ public class Velocity extends Module {
         this.mixTestReduceHitOnGround = false;
         this.mixTestReduceRestoreSprintNextTick = false;
         this.endRotate();
-
         if (Epilogue.delayManager.getDelayModule() == DelayModules.VELOCITY) {
             Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
         }
