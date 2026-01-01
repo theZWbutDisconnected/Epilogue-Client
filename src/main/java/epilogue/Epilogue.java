@@ -20,7 +20,7 @@ import java.lang.reflect.Field;
 
 public class Epilogue {
     public static String clientName = "Epilogue ";
-    public static String clientVersion = "v2.3";
+    public static String clientVersion = "Happy New Year";
 
     public static RotationManager rotationManager;
     public static FloatManager floatManager;
@@ -81,9 +81,9 @@ public class Epilogue {
         moduleManager.modules.put(Blink.class, new Blink());
         moduleManager.modules.put(Camera.class, new Camera());
         moduleManager.modules.put(Chams.class, new Chams());
-        moduleManager.modules.put(ChestAura.class, new ChestAura());
         moduleManager.modules.put(ChestESP.class, new ChestESP());
         moduleManager.modules.put(ChestStealer.class, new ChestStealer());
+        moduleManager.modules.put(ChestAura.class, new ChestAura());
         moduleManager.modules.put(ChestView.class, new ChestView());
         moduleManager.modules.put(ClickGUI.class, new ClickGUI());
         moduleManager.modules.put(CloudMusicModule.class, new CloudMusicModule());
