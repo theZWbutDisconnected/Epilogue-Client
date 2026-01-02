@@ -6,105 +6,208 @@ import epilogue.enums.BlinkModules;
 import epilogue.event.EventTarget;
 import epilogue.event.types.EventType;
 import epilogue.event.types.Priority;
-import epilogue.events.PacketEvent;
+import epilogue.events.MoveInputEvent;
 import epilogue.events.TickEvent;
-import epilogue.mixin.IAccessorC03PacketPlayer;
+import epilogue.events.UpdateEvent;
 import epilogue.mixin.IAccessorMinecraft;
+import epilogue.mixin.IAccessorPlayerControllerMP;
+import epilogue.management.RotationState;
 import epilogue.module.Module;
 import epilogue.util.*;
 import epilogue.value.values.FloatValue;
 import epilogue.value.values.ModeValue;
 import epilogue.value.values.IntValue;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.Packet;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.C03PacketPlayer;
-import net.minecraft.network.play.server.S08PacketPlayerPosLook;
-import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.BlockPos;
 
 public class NoFall extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private final TimerUtil packetDelayTimer = new TimerUtil();
     private final TimerUtil scoreboardResetTimer = new TimerUtil();
     private boolean slowFalling = false;
-    private boolean lastOnGround = false;
-    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Packet", "Blink", "NoGround", "Spoof"});
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Packet", "Blink", "NoGround", "Spoof", "Legit"});
     public final FloatValue distance = new FloatValue("Distance", 3.0F, 0.0F, 20.0F);
     public final IntValue delay = new IntValue("Delay", 0, 0, 10000);
 
-    private boolean canTrigger() {
-        return this.scoreboardResetTimer.hasTimeElapsed(3000) && this.packetDelayTimer.hasTimeElapsed(this.delay.getValue().longValue());
+    private int lStage = 0;
+    private int lPrevSlot = -1;
+    private float lYaw = 0.0F;
+    private float lPitch = 0.0F;
+    private boolean lRun = false;
+    private boolean lRot = false;
+    private int lTick = 0;
+    private int lPickTick = 0;
+    private boolean lSilent = false;
+    private BlockPos lPos = null;
+
+    private int findWaterBucketSlot() {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+            if (stack != null && stack.getItem() == Items.water_bucket) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean legitAllowed() {
+        if (mc.thePlayer == null) {
+            return false;
+        }
+        if (mc.thePlayer.capabilities.allowFlying) {
+            return false;
+        }
+        return mc.thePlayer.fallDistance >= this.distance.getValue();
+    }
+
+    private void legitReset() {
+        if (mc.thePlayer != null && this.lPrevSlot != -1) {
+            mc.thePlayer.inventory.currentItem = this.lPrevSlot;
+        }
+        this.lStage = 0;
+        this.lPrevSlot = -1;
+        this.lRun = false;
+        this.lRot = false;
+        this.lTick = 0;
+        this.lPickTick = 0;
+        this.lSilent = false;
+        this.lPos = null;
+        Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
+    }
+
+    private void legitUseItem() {
+        ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
+        mc.playerController.sendUseItem(mc.thePlayer, mc.theWorld, mc.thePlayer.getHeldItem());
+    }
+
+    private void handleLegit() {
+        if (mc.thePlayer.onGround && this.lRun) {
+            if (this.lStage == 2) {
+                this.lStage = 4;
+                this.lPickTick = 0;
+            } else if (this.lStage != 4) {
+                this.legitReset();
+                this.packetDelayTimer.reset();
+                mc.thePlayer.fallDistance = 0.0F;
+                return;
+            }
+        }
+        if (!this.legitAllowed()) {
+            if (this.lRun) {
+                this.legitReset();
+            }
+            return;
+        }
+
+        if (!this.lRun) {
+            int slot = this.findWaterBucketSlot();
+            if (slot == -1) {
+                return;
+            }
+            BlockPos p = new BlockPos(
+                    Math.floor(mc.thePlayer.posX),
+                    Math.floor(mc.thePlayer.posY),
+                    Math.floor(mc.thePlayer.posZ)
+            );
+            BlockPos t = p.down();
+            if (BlockUtil.isReplaceable(t)) {
+                t = t.down();
+            }
+            if (BlockUtil.isReplaceable(t)) {
+                return;
+            }
+            this.lPos = t;
+            this.lPrevSlot = mc.thePlayer.inventory.currentItem;
+            mc.thePlayer.inventory.currentItem = slot;
+            this.lStage = 1;
+            this.lRun = true;
+            this.lTick = 0;
+            this.lPickTick = 0;
+            this.lSilent = true;
+        }
+
+        Epilogue.blinkManager.setBlinkState(true, BlinkModules.NO_FALL);
+
+        if (this.lStage == 1) {
+            this.lStage = 2;
+            this.lTick = 0;
+        }
+
+        if (this.lStage == 2 || this.lStage == 4) {
+            float cur = this.lRot ? this.lPitch : mc.thePlayer.rotationPitch;
+            float d = 90.0F - cur;
+            float step = 180.0F;
+            if (d > step) {
+                d = step;
+            } else if (d < -step) {
+                d = -step;
+            }
+            this.lYaw = mc.thePlayer.rotationYaw;
+            this.lPitch = cur + d;
+            this.lRot = true;
+
+            if (this.lPos != null) {
+                this.legitUseItem();
+                mc.thePlayer.swingItem();
+            }
+
+            if (this.lStage == 2) {
+                if (PlayerUtil.checkInWater(mc.thePlayer.getEntityBoundingBox())) {
+                    this.lStage = 4;
+                    this.lPickTick = 0;
+                    return;
+                }
+                this.lTick++;
+                if (this.lTick >= 20) {
+                    this.lStage = 3;
+                    this.lRot = false;
+                    this.lSilent = false;
+                }
+                return;
+            }
+
+            this.lPickTick++;
+            if (this.lPickTick >= 6) {
+                mc.thePlayer.fallDistance = 0.0F;
+                this.packetDelayTimer.reset();
+                this.legitReset();
+            }
+            return;
+        }
+
+        if (this.lStage == 3) {
+            if (mc.thePlayer.onGround || PlayerUtil.checkInWater(mc.thePlayer.getEntityBoundingBox())) {
+                mc.thePlayer.fallDistance = 0.0F;
+                this.packetDelayTimer.reset();
+                this.legitReset();
+            }
+        }
     }
 
     public NoFall() {
         super("NoFall", false);
     }
 
+    @EventTarget
+    public void onMoveInput(MoveInputEvent event) {
+        if (this.isEnabled()) {
+            if ((this.mode.getValue() == 4 && this.lRun || RotationState.isActived())
+                    && RotationState.getPriority() == 3.0F
+                    && MoveUtil.isForwardPressed()) {
+                MoveUtil.fixStrafe(RotationState.getSmoothedYaw());
+            }
+        }
+    }
+
     @EventTarget(Priority.HIGH)
-    public void onPacket(PacketEvent event) {
-        if (event.getType() == EventType.RECEIVE && event.getPacket() instanceof S08PacketPlayerPosLook) {
-            this.onDisabled();
-        } else if (this.isEnabled() && event.getType() == EventType.SEND && !event.isCancelled()) {
-            if (event.getPacket() instanceof C03PacketPlayer) {
-                C03PacketPlayer packet = (C03PacketPlayer) event.getPacket();
-                switch (this.mode.getValue()) {
-                    case 0:
-                        if (this.slowFalling) {
-                            this.slowFalling = false;
-                            ((IAccessorMinecraft) mc).getTimer().timerSpeed = 1.0F;
-                        } else if (!packet.isOnGround()) {
-                            AxisAlignedBB aabb = mc.thePlayer.getEntityBoundingBox().expand(2.0, 0.0, 2.0);
-                            if (PlayerUtil.canFly(this.distance.getValue())
-                                    && !PlayerUtil.checkInWater(aabb)
-                                    && this.canTrigger()) {
-                                this.packetDelayTimer.reset();
-                                this.slowFalling = true;
-                                ((IAccessorMinecraft) mc).getTimer().timerSpeed = 0.5F;
-                            }
-                        }
-                        break;
-                    case 1:
-                        boolean allowed = !mc.thePlayer.isOnLadder() && !mc.thePlayer.capabilities.allowFlying && mc.thePlayer.hurtTime == 0;
-                        if (Epilogue.blinkManager.getBlinkingModule() != BlinkModules.NO_FALL) {
-                            if (this.lastOnGround
-                                    && !packet.isOnGround()
-                                    && allowed
-                                    && PlayerUtil.canFly(this.distance.getValue().intValue())
-                                    && mc.thePlayer.motionY < 0.0) {
-                                Epilogue.blinkManager.setBlinkState(false, Epilogue.blinkManager.getBlinkingModule());
-                                Epilogue.blinkManager.setBlinkState(true, BlinkModules.NO_FALL);
-                            }
-                        } else if (!allowed) {
-                            Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
-                            ChatUtil.sendFormatted(String.format("%s%s: &cFailed player check!&r", Epilogue.clientName, this.getName()));
-                        } else if (PlayerUtil.checkInWater(mc.thePlayer.getEntityBoundingBox().expand(2.0, 0.0, 2.0))) {
-                            Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
-                            ChatUtil.sendFormatted(String.format("%s%s: &cFailed void check!&r", Epilogue.clientName, this.getName()));
-                        } else if (packet.isOnGround()) {
-                            for (Packet<?> blinkedPacket : Epilogue.blinkManager.blinkedPackets) {
-                                if (blinkedPacket instanceof C03PacketPlayer) {
-                                    ((IAccessorC03PacketPlayer) blinkedPacket).setOnGround(true);
-                                }
-                            }
-                            Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
-                            this.packetDelayTimer.reset();
-                        }
-                        this.lastOnGround = packet.isOnGround() && allowed && this.canTrigger();
-                        break;
-                    case 2:
-                        ((IAccessorC03PacketPlayer) packet).setOnGround(false);
-                        break;
-                    case 3:
-                        if (!packet.isOnGround()) {
-                            AxisAlignedBB aabb = mc.thePlayer.getEntityBoundingBox().expand(2.0, 0.0, 2.0);
-                            if (PlayerUtil.canFly(this.distance.getValue())
-                                    && !PlayerUtil.checkInWater(aabb)
-                                    && this.canTrigger()) {
-                                this.packetDelayTimer.reset();
-                                ((IAccessorC03PacketPlayer) packet).setOnGround(true);
-                                mc.thePlayer.fallDistance = 0.0F;
-                            }
-                        }
-                }
+    public void onUpdate(UpdateEvent event) {
+        if (this.isEnabled() && event.getType() == EventType.PRE) {
+            if (this.mode.getValue() == 4 && this.lSilent) {
+                event.setRotation(this.lYaw, this.lPitch, 3);
+                event.setPervRotation(this.lYaw, 3);
             }
         }
     }
@@ -119,12 +222,16 @@ public class NoFall extends Module {
                 PacketUtil.sendPacketNoEvent(new C03PacketPlayer(true));
                 mc.thePlayer.fallDistance = 0.0F;
             }
+
+            if (this.mode.getValue() == 4) {
+                this.handleLegit();
+            }
         }
     }
 
     @Override
     public void onDisabled() {
-        this.lastOnGround = false;
+        this.legitReset();
         Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_FALL);
         if (this.slowFalling) {
             this.slowFalling = false;
