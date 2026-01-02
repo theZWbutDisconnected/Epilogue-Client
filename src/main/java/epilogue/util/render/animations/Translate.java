@@ -1,7 +1,8 @@
 package epilogue.util.render.animations;
 
 import net.minecraft.client.Minecraft;
-import epilogue.util.MathUtil;
+
+import static epilogue.Epilogue.rand;
 
 public final class Translate {
     private double x, y;
@@ -57,7 +58,7 @@ public final class Translate {
         double dif = Math.abs(now - desired);
         int fps = Minecraft.getDebugFPS();
         if (dif > 0.0) {
-            double animationSpeed = MathUtil.roundToDecimalPlace(Math.min(10.0, Math.max(0.0625, 144.0 / (double)fps * (dif / 10.0) * speed)), 0.0625);
+            double animationSpeed = rand.roundToDecimalPlace(Math.min(10.0, Math.max(0.0625, 144.0 / (double)fps * (dif / 10.0) * speed)), 0.0625);
             if (dif < animationSpeed) {
                 animationSpeed = dif;
             }
@@ -75,7 +76,7 @@ public final class Translate {
         double dif = Math.abs(now - desired);
         int fps = Minecraft.getDebugFPS();
         if (dif > 0.0) {
-            double animationSpeed = MathUtil.roundToDecimalPlace(Math.min(10.0, Math.max(0.0625, 144.0 / (double)fps * dif / 10.0 * speed)), 0.0625);
+            double animationSpeed = rand.roundToDecimalPlace(Math.min(10.0, Math.max(0.0625, 144.0 / (double)fps * dif / 10.0 * speed)), 0.0625);
             if (dif < animationSpeed) {
                 animationSpeed = dif;
             }

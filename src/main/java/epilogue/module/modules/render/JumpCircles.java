@@ -30,6 +30,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static epilogue.Epilogue.rand;
+
 public class JumpCircles extends Module {
     private final Minecraft mc = Minecraft.getMinecraft();
     @SuppressWarnings("unchecked")
@@ -184,7 +186,7 @@ public class JumpCircles extends Module {
             float aPC;
             for (int i = 1; i < (int) polygons; i++) {
                 float iPC = i / polygons, extY = extMaxY * i / polygons - extMaxY / polygons;
-                if ((aPC = MathUtil.lerp(alphaPC * minAPC, 0, iPC)) * 255 < 1) continue;
+                if ((aPC = rand.lerp(alphaPC * minAPC, 0, iPC)) * 255 < 1) continue;
                 float radiusPost = radius + (float) easeOutCirc(valWave01(iPC - 1.5F / polygons)) * extMaxXZ;
                 int darkerColor0 = ColorUtil.darker(colors[0], aPC);
                 int darkerColor1 = ColorUtil.darker(colors[1], aPC);
