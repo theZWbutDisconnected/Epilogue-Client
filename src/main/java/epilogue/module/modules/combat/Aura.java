@@ -419,7 +419,7 @@ public class Aura extends Module {
         this.throughWalls = new BooleanValue("Through Walls", true);
         this.weaponsOnly = new BooleanValue("Only Weapons", true);
         this.allowTools = new BooleanValue("Allow Tools", false, this.weaponsOnly::getValue);
-        this.allowMining = new BooleanValue("Break AutoBlockIn", true);
+        this.allowMining = new BooleanValue("Break Block", true);
         this.inventoryCheck = new BooleanValue("No Inventory", true);
         this.teams = new BooleanValue("Teams", true);
         this.botCheck = new BooleanValue("Anti Bot", true);

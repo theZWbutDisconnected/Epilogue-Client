@@ -42,39 +42,22 @@ public class Velocity2 extends Module {
     private int reduceRotateTicksLeft = 0;
     private int lastHurtTime = 0;
 
-    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"Hypixel"});
-
+    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"Reduce"});
     public final BooleanValue rotate = new BooleanValue("Rotate", false);
     public final IntValue rotateTick = new IntValue("RotateTick", 2, 1, 12, () -> this.rotate.getValue());
     public final BooleanValue autoMove = new BooleanValue("AutoMove", false, () -> this.rotate.getValue());
-
     public final BooleanValue airRotate = new BooleanValue("AirRotate", false, () -> this.rotate.getValue());
-    public final IntValue airRotateTicks = new IntValue(
-            "AirRotateTicks",
-            2,
-            1,
-            10,
-            () -> this.rotate.getValue() && this.airRotate.getValue()
-    );
+    public final IntValue airRotateTicks = new IntValue("AirRotateTicks", 2, 1, 10, () -> this.rotate.getValue() && this.airRotate.getValue());
     public final BooleanValue jumpReset = new BooleanValue("JumpReset", false, () -> this.mode.getValue() == 0);
-
     public final BooleanValue attackReduce3 = new BooleanValue("AttackReduce3", false);
     public final BooleanValue sprintReset3 = new BooleanValue("SprintReset3", true, () -> this.attackReduce3.getValue());
     public final FloatValue reduce3Factor = new FloatValue("Reduce3-Factor", 0.6F, 0.1F, 1.0F, () -> this.attackReduce3.getValue());
-
     public final BooleanValue autoReduce = new BooleanValue("AutoReduce", false);
     public final BooleanValue reduceDebug = new BooleanValue("Reduce Debug", false, () -> this.autoReduce.getValue());
-
     public final BooleanValue reduceMode = new BooleanValue("Reduce", false);
     public final ModeValue reduceType = new ModeValue("Reduce-Type", 0, new String[]{"Attackreduce", "Reduce2"}, () -> this.reduceMode.getValue());
     public final FloatValue reduceFactor = new FloatValue("Reduce-Factor", 0.6F, 0.1F, 1.0F, () -> this.reduceMode.getValue());
-    public final IntValue attackTick = new IntValue(
-            "AttackTick",
-            4,
-            1,
-            10,
-            () -> this.reduceMode.getValue() && this.reduceType.getValue() == 0
-    );
+    public final IntValue attackTick = new IntValue("AttackTick", 4, 1, 10, () -> this.reduceMode.getValue() && this.reduceType.getValue() == 0);
     public final BooleanValue sprintReset = new BooleanValue("SprintReset", true, () -> this.reduceMode.getValue());
     public final PercentValue horizontal = new PercentValue("horizontal", 100);
     public final PercentValue vertical = new PercentValue("vertical", 100);
