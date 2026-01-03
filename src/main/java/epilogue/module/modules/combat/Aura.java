@@ -70,7 +70,7 @@ public class Aura extends Module {
     public AttackData target = null;
     private int switchTick = 0;
     private boolean hitRegistered = false;
-    private boolean blockingState = false;
+    boolean blockingState = false;
     private boolean isBlocking = false;
     private boolean fakeBlockState = false;
     private boolean blinkReset = false;
