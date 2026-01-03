@@ -23,7 +23,7 @@ import java.lang.reflect.Field;
 
 public class Epilogue {
     public static String clientName = "Epilogue ";
-    public static String clientVersion = "Happy New Year / HYW";
+    public static String clientVersion = "Bate v1";
 
     public static RotationManager rotationManager;
     public static FloatManager floatManager;
