@@ -2,7 +2,6 @@ package epilogue.config;
 
 import java.io.*;
 import java.util.ArrayList;
-import epilogue.crypto.MultiLayerEncryptor;
 import com.google.gson.*;
 import epilogue.Epilogue;
 import epilogue.mixin.IAccessorMinecraft;
@@ -18,8 +17,7 @@ public class Config {
     public String name;
     public File file;
 
-    // 默认密钥标识符
-    private static boolean usingDefaultKeys = true;
+    private static final int SCHEMA_VERSION = 1;
 
     public Config(String name) {
         this(name, false);
@@ -36,44 +34,12 @@ public class Config {
             }
 
             if (newConfig && !file.exists()) {
-                // 创建新的默认配置文件
                 JsonObject defaultConfig = createDefaultConfig();
                 saveJson(defaultConfig);
                 getLogger().info("Created new config: " + file.getName());
             }
         } catch (Exception e) {
             getLogger().error("Error initializing config: " + e.getMessage());
-        }
-    }
-
-    // 设置加密密钥
-    public static void setEncryptionKeys(String des, String aes, String rc4,
-                                         String blowfish,
-                                         String xor, String custom) {
-        MultiLayerEncryptor.setKeys(des, aes, rc4, blowfish, xor, custom, null, null, null, null);
-        usingDefaultKeys = false;
-        getLogger().info("Using custom encryption keys");
-    }
-
-    public static void setEncryptionKeys(String des, String aes, String rc4,
-                                         String blowfish,
-                                         String xor, String custom,
-                                         String rsaPubB64, String rsaPriB64,
-                                         String sm2PubB64, String sm2PriB64) {
-        MultiLayerEncryptor.setKeys(des, aes, rc4, blowfish, xor, custom, rsaPubB64, rsaPriB64, sm2PubB64, sm2PriB64);
-        usingDefaultKeys = false;
-        getLogger().info("Using custom encryption keys");
-    }
-
-    // 重置为默认密钥
-    public static void resetToDefaultKeys() {
-        // 重新初始化MultiLayerEncryptor会使用默认密钥
-        try {
-            Class.forName("epilogue.crypto.MultiLayerEncryptor");
-            usingDefaultKeys = true;
-            getLogger().info("Reset to default encryption keys");
-        } catch (Exception e) {
-            getLogger().error("Failed to reset keys: " + e.getMessage());
         }
     }
 
@@ -93,72 +59,23 @@ public class Config {
         }
 
         try {
-            // 1. 读取文件
-            String encryptedContent = readFileContent();
-            if (encryptedContent == null || encryptedContent.trim().isEmpty()) {
+            String content = readFileContent();
+            if (content == null || content.trim().isEmpty()) {
                 ChatUtil.sendFormatted(String.format("%sConfig file is empty: %s",
                         Epilogue.clientName, file.getName()));
                 return;
             }
 
-            // 2. 尝试解密
-            String decryptedContent = null;
-            boolean usedDefaultKeys = false;
-
-            try {
-                // 首先使用当前密钥尝试
-                decryptedContent = MultiLayerEncryptor.decrypt(encryptedContent.trim());
-            } catch (Exception e) {
-                getLogger().warn("Decryption failed with current keys: " + e.getMessage());
-
-                // 如果是填充错误，尝试使用默认密钥
-                if (e.getMessage() != null && e.getMessage().contains("padding")) {
-                    getLogger().info("Trying with default keys...");
-
-                    // 保存当前密钥状态
-                    boolean wasUsingDefault = usingDefaultKeys;
-
-                    // 重置到默认密钥
-                    resetToDefaultKeys();
-                    usedDefaultKeys = true;
-
-                    try {
-                        decryptedContent = MultiLayerEncryptor.decrypt(encryptedContent.trim());
-                        getLogger().info("Successfully decrypted with default keys");
-                    } catch (Exception e2) {
-                        // 如果默认密钥也失败，尝试其他方法
-                        throw new Exception("Failed to decrypt with both current and default keys. " +
-                                "The config file may be corrupted or use different keys.", e2);
-                    }
-
-                    // 恢复之前的密钥状态
-                    if (!wasUsingDefault) {
-                        usingDefaultKeys = false;
-                    }
-                } else {
-                    throw e;
-                }
-            }
-
-            // 3. 解析JSON
-            JsonObject jsonObject = parseJson(decryptedContent);
-
-            // 4. 加载配置
+            JsonObject jsonObject = parseJson(content);
             loadConfiguration(jsonObject);
 
-            String keyInfo = usedDefaultKeys ? " (using default keys)" : "";
-            ChatUtil.sendFormatted(String.format("%sConfig loaded successfully%s: %s",
-                    Epilogue.clientName, keyInfo, file.getName()));
+            ChatUtil.sendFormatted(String.format("%sConfig loaded successfully: %s",
+                    Epilogue.clientName, file.getName()));
 
         } catch (Exception e) {
-            String errorMsg = e.getMessage();
-            if (errorMsg.contains("padding") || errorMsg.contains("BadPaddingException")) {
-                errorMsg = "Wrong encryption key or corrupted file";
-            }
-
-            getLogger().error("Failed to load config: " + errorMsg, e);
+            getLogger().error("Failed to load config: " + e.getMessage(), e);
             ChatUtil.sendFormatted(String.format("%sFailed to load config: %s",
-                    Epilogue.clientName, errorMsg));
+                    Epilogue.clientName, e.getMessage()));
         }
     }
 
@@ -174,7 +91,6 @@ public class Config {
     }
 
     private JsonObject parseJson(String jsonString) throws JsonSyntaxException {
-        // 清理可能的BOM和空白字符
         jsonString = jsonString.trim();
         if (jsonString.startsWith("\uFEFF")) {
             jsonString = jsonString.substring(1);
@@ -189,14 +105,25 @@ public class Config {
     }
 
     private void loadConfiguration(JsonObject json) {
-        // 加载账户配置（现在从独立文件加载）
-        AccountConfig.load(null); // 传递null，让AccountConfig从独立文件加载
+        if (!json.has("meta") || !json.get("meta").isJsonObject()) {
+            throw new JsonSyntaxException("Missing 'meta' object");
+        }
 
-        // 加载模块配置
+        JsonObject meta = json.getAsJsonObject("meta");
+        if (!meta.has("schema") || meta.get("schema").getAsInt() != SCHEMA_VERSION) {
+            throw new JsonSyntaxException("Unsupported schema version");
+        }
+
+        AccountConfig.load(null);
+        if (!json.has("modules") || !json.get("modules").isJsonObject()) {
+            throw new JsonSyntaxException("Missing 'modules' object");
+        }
+
+        JsonObject modules = json.getAsJsonObject("modules");
         for (Module module : Epilogue.moduleManager.modules.values()) {
             String moduleName = module.getName();
-            if (json.has(moduleName)) {
-                JsonElement moduleElement = json.get(moduleName);
+            if (modules.has(moduleName)) {
+                JsonElement moduleElement = modules.get(moduleName);
                 if (moduleElement.isJsonObject()) {
                     loadModule(module, moduleElement.getAsJsonObject());
                 }
@@ -206,7 +133,6 @@ public class Config {
 
     private void loadModule(Module module, JsonObject obj) {
         try {
-            // 基本属性
             if (obj.has("toggled") && obj.get("toggled").isJsonPrimitive()) {
                 module.setEnabled(obj.get("toggled").getAsBoolean());
             }
@@ -218,8 +144,6 @@ public class Config {
             if (obj.has("hidden") && obj.get("hidden").isJsonPrimitive()) {
                 module.setHidden(obj.get("hidden").getAsBoolean());
             }
-
-            // 值配置
             ArrayList<Value<?>> values = Epilogue.valueHandler.properties.get(module.getClass());
             if (values != null) {
                 for (Value<?> value : values) {
@@ -240,29 +164,29 @@ public class Config {
 
     public void save() {
         try {
-            // 确保目录存在
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
 
-            // 构建配置JSON
             JsonObject configJson = new JsonObject();
 
-            // 账户配置（现在只保存引用信息）
+            JsonObject meta = new JsonObject();
+            meta.addProperty("schema", SCHEMA_VERSION);
+            meta.addProperty("name", this.name);
+            meta.addProperty("savedAt", System.currentTimeMillis());
+            configJson.add("meta", meta);
+
             configJson.add("accountManager", AccountConfig.save());
 
-            // 模块配置
+            JsonObject modules = new JsonObject();
             for (Module module : Epilogue.moduleManager.modules.values()) {
-                configJson.add(module.getName(), saveModule(module));
+                modules.add(module.getName(), saveModule(module));
             }
+            configJson.add("modules", modules);
 
-            // 保存主配置文件
             saveJson(configJson);
-
-            // 同时保存账户到独立文件
             AccountConfig.saveToFile();
-
             ChatUtil.sendFormatted(String.format("%sConfig saved successfully: %s",
                     Epilogue.clientName, file.getName()));
 
@@ -279,8 +203,6 @@ public class Config {
         obj.addProperty("toggled", module.isEnabled());
         obj.addProperty("key", module.getKey());
         obj.addProperty("hidden", module.isHidden());
-
-        // 保存值配置
         ArrayList<Value<?>> values = Epilogue.valueHandler.properties.get(module.getClass());
         if (values != null) {
             for (Value<?> value : values) {
@@ -298,37 +220,32 @@ public class Config {
 
     private JsonObject createDefaultConfig() {
         JsonObject config = new JsonObject();
-        // 账户配置只保存引用信息
+
+        JsonObject meta = new JsonObject();
+        meta.addProperty("schema", SCHEMA_VERSION);
+        meta.addProperty("name", this.name);
+        meta.addProperty("savedAt", System.currentTimeMillis());
+        config.add("meta", meta);
+
         config.add("accountManager", AccountConfig.save());
 
-        // 为每个模块创建默认配置
+        JsonObject modules = new JsonObject();
         for (Module module : Epilogue.moduleManager.modules.values()) {
             JsonObject moduleConfig = new JsonObject();
             moduleConfig.addProperty("toggled", false);
             moduleConfig.addProperty("key", 0);
             moduleConfig.addProperty("hidden", false);
-            config.add(module.getName(), moduleConfig);
+            modules.add(module.getName(), moduleConfig);
         }
+        config.add("modules", modules);
 
         return config;
     }
 
     private void saveJson(JsonObject json) throws Exception {
-        // 转换为JSON字符串
         String jsonString = gson.toJson(json);
-
-        // 加密
-        String encrypted;
-        try {
-            encrypted = MultiLayerEncryptor.encrypt(jsonString);
-        } catch (Exception e) {
-            getLogger().error("Encryption failed: " + e.getMessage());
-            throw new Exception("Failed to encrypt config: " + e.getMessage(), e);
-        }
-
-        // 写入文件
         try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
-            writer.print(encrypted);
+            writer.print(jsonString);
         }
     }
 }
