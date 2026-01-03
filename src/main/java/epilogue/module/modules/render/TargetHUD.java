@@ -28,7 +28,6 @@ import net.minecraft.item.*;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
@@ -50,6 +49,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.function.Supplier;
+import epilogue.ui.chat.GuiChat;
 
 public class TargetHUD extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -130,7 +130,7 @@ public class TargetHUD extends Module {
                 && TeamUtil.isEntityLoaded(this.lastTarget)) {
             return this.lastTarget;
         } else {
-            return this.chatPreview.getValue() && mc.currentScreen instanceof GuiChat ? mc.thePlayer : null;
+            return this.chatPreview.getValue() && (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat || mc.currentScreen instanceof GuiChat) ? mc.thePlayer : null;
         }
     }
 
@@ -176,7 +176,7 @@ public class TargetHUD extends Module {
         }
 
         EntityLivingBase currentTarget = this.resolveTarget();
-        if (currentTarget == null && mc.currentScreen instanceof GuiChat) {
+        if (currentTarget == null && (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat || mc.currentScreen instanceof GuiChat)) {
             currentTarget = mc.thePlayer;
         }
 

@@ -5,8 +5,8 @@ import epilogue.events.ChatGUIEvent;
 import epilogue.events.Render2DEvent;
 import epilogue.util.render.PostProcessing;
 import epilogue.util.render.animations.advanced.Direction;
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class WidgetManager {
     @EventTarget
     public void onChatGUI(ChatGUIEvent event) {
         if (mc.gameSettings.showDebugInfo) return;
-        if (!(mc.currentScreen instanceof GuiChat)) return;
+        if (!(mc.currentScreen instanceof net.minecraft.client.gui.GuiChat) && !(mc.currentScreen instanceof GuiChat)) return;
         ScaledResolution sr = new ScaledResolution(mc);
 
         boolean prevSuppress = PostProcessing.isInternalBloomSuppressed();

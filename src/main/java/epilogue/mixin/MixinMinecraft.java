@@ -8,6 +8,7 @@ import epilogue.events.*;
 import epilogue.module.modules.combat.NoHitDelay;
 import epilogue.ui.mainmenu.GuiMainMenu;
 import epilogue.ui.mainmenu.GuiStartupIntro;
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;
@@ -183,6 +184,25 @@ public abstract class MixinMinecraft {
             net.minecraft.client.gui.ScaledResolution scaledResolution = new net.minecraft.client.gui.ScaledResolution((Minecraft)(Object)this);
             this.currentScreen.setWorldAndResolution((Minecraft)(Object)this, scaledResolution.getScaledWidth(), scaledResolution.getScaledHeight());
         }
+    }
+
+    @Inject(method = "displayGuiScreen", at = @At("HEAD"), cancellable = true)
+    private void epilogue$replaceGuiChat(GuiScreen guiScreenIn, CallbackInfo ci) {
+        if (!(guiScreenIn instanceof net.minecraft.client.gui.GuiChat)) {
+            return;
+        }
+
+        String defaultText = "";
+        try {
+            net.minecraft.client.gui.GuiTextField input = ((IAccessorGuiChat) guiScreenIn).getInputField();
+            if (input != null && input.getText() != null) {
+                defaultText = input.getText();
+            }
+        } catch (Throwable ignored) {
+        }
+
+        GuiChat.open(defaultText);
+        ci.cancel();
     }
 
     @Inject(method = "createDisplay", at = @At("RETURN"))

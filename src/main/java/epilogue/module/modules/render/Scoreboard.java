@@ -1,5 +1,6 @@
 package epilogue.module.modules.render;
 
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
@@ -52,6 +53,8 @@ public class Scoreboard extends Module {
 
         float s = Math.max(0.1f, scale.getValue() / 100.0f);
 
+        boolean preview = (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat) || (mc.currentScreen instanceof GuiChat);
+
         ScoreObjective scoreobjective = mc.theWorld.getScoreboard().getObjectiveInDisplaySlot(1);
         if (scoreobjective != null) {
             net.minecraft.scoreboard.Scoreboard scoreboard = scoreobjective.getScoreboard();
@@ -82,8 +85,6 @@ public class Scoreboard extends Module {
             int height = listSize * fontHeight;
             int paddingX = 4;
             int maxWidthPadded = maxWidth + paddingX * 2;
-            float basePosX = anchorRightX - maxWidthPadded - 3;
-            float basePosY = anchorTopY;
 
             float scaledW = (maxWidthPadded + 4) * s;
             float scaledH = (height + fontHeight + 2) * s;
@@ -162,7 +163,7 @@ public class Scoreboard extends Module {
 
             lastWidth = scaledW;
             lastHeight = scaledH;
-        } else if (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat) {
+        } else if (preview) {
             String title = "Test Server";
             String l1 = "PlayerOne: " + EnumChatFormatting.RED + "20";
             String l2 = "PlayerTwo: " + EnumChatFormatting.RED + "15";
@@ -177,8 +178,6 @@ public class Scoreboard extends Module {
             int height = listSize * fontHeight;
             int paddingX = 4;
             int maxWidthPadded = maxWidth + paddingX * 2;
-            float basePosX = anchorRightX - maxWidthPadded - 3;
-            float basePosY = anchorTopY;
 
             float scaledW = (maxWidthPadded + 4) * s;
             float scaledH = (height + fontHeight + 2) * s;

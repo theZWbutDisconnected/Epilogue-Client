@@ -1,11 +1,11 @@
 package epilogue.module.modules.render;
 
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.client.shader.Framebuffer;
-import epilogue.event.EventTarget;
 import epilogue.events.Render2DEvent;
 import epilogue.module.Module;
 import epilogue.Epilogue;
@@ -120,7 +120,7 @@ public class Notification extends Module {
 
         updateNotificationStates();
 
-        boolean preview = mc.currentScreen instanceof net.minecraft.client.gui.GuiChat;
+        boolean preview = (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat) || (mc.currentScreen instanceof GuiChat);
         if (preview && displayQueue.isEmpty()) {
             displayQueue.add(new ModuleToggleNotification("Fly", true));
             displayQueue.add(new ModuleToggleNotification("Sprint", true));

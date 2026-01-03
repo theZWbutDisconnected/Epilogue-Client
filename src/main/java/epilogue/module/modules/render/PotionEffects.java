@@ -1,6 +1,7 @@
 package epilogue.module.modules.render;
 
 import epilogue.Epilogue;
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
@@ -40,7 +41,7 @@ public class PotionEffects extends Module {
         if (mc.thePlayer == null || mc.theWorld == null) return;
 
         Collection<PotionEffect> active = mc.thePlayer.getActivePotionEffects();
-        boolean preview = (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat);
+        boolean preview = (mc.currentScreen instanceof net.minecraft.client.gui.GuiChat) || (mc.currentScreen instanceof GuiChat);
         if ((active == null || active.isEmpty()) && !preview) return;
 
         List<PotionEffect> potions;
