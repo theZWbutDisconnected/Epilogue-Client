@@ -14,6 +14,7 @@ import epilogue.value.values.IntValue;
 import epilogue.value.values.ModeValue;
 import epilogue.util.render.ColorUtil;
 import epilogue.util.render.RenderUtil;
+import epilogue.util.render.RoundedUtil;
 import epilogue.font.FontRenderer;
 import epilogue.util.render.animations.Translate;
 import epilogue.util.render.animations.advanced.Animation;
@@ -33,11 +34,26 @@ public class ArrayList extends Module {
     public final ModeValue rectangleValue = new ModeValue("Rectangle", 1, new String[]{"None", "Top", "Side"});
     public final BooleanValue backgroundValue = new BooleanValue("Back Ground", true);
     public final IntValue bgAlpha = new IntValue("Back Ground Alpha", 40, 1, 255);
+    public final IntValue round = new IntValue("Round", 0, 0, 12);
     public final FloatValue textHeight = new FloatValue("Text Height", 5f, 0f, 10f);
     public final FloatValue textOffset = new FloatValue("Text Offset", 2.5f, -6f, 6f);
 
     public ArrayList() {
         super("Arraylist", true);
+    }
+
+    private void drawBottomRoundedRow(float x, float y, float w, float h, float radius, Color color) {
+        if (w <= 0.0f || h <= 0.0f) return;
+        float r = Math.max(0.0f, Math.min(radius, Math.min(w, h) / 2.0f));
+        if (r <= 0.0f) {
+            RenderUtil.drawRect(x, y, w, h, color.getRGB());
+            return;
+        }
+
+        RenderUtil.drawRect(x, y, w, Math.max(0.0f, h - r), color.getRGB());
+        RenderUtil.drawRect(x + r, y + h - r, Math.max(0.0f, w - 2.0f * r), r, color.getRGB());
+        RoundedUtil.drawRound(x, y + h - 2.0f * r, 2.0f * r, 2.0f * r, r, color);
+        RoundedUtil.drawRound(x + w - 2.0f * r, y + h - 2.0f * r, 2.0f * r, 2.0f * r, r, color);
     }
 
     private String getFormattedTag(String tag) {
@@ -64,8 +80,6 @@ public class ArrayList extends Module {
         float yValue = y;
 
         boolean alignRight = x >= (sr.getScaledWidth() / 2.0f);
-        float anchorRightX = x;
-        float anchorLeftX = x;
         int screenWidth = sr.getScaledWidth();
         epilogue.module.modules.render.Interface interfaceModule = (epilogue.module.modules.render.Interface) Epilogue.moduleManager.getModule("Interface");
 
@@ -94,10 +108,10 @@ public class ArrayList extends Module {
                 float moduleWidth = FontRenderer.getStringWidth(module.getName() + getFormattedTag(module.getTag()));
 
                 if (module.isEnabled() && !module.isHidden()) {
-                    translate.translate((alignRight ? (anchorRightX - moduleWidth - 1.0f) : (anchorLeftX + 1.0f)), yValue);
+                    translate.translate((alignRight ? (x - moduleWidth - 1.0f) : (x + 1.0f)), yValue);
                     yValue += FontRenderer.getFontHeight() + fontHeight;
                 } else {
-                    translate.animate((alignRight ? (anchorRightX - 1) : (anchorLeftX + 1)), -25.0);
+                    translate.animate((alignRight ? (x - 1) : (x + 1)), -25.0);
                 }
 
                 if (translate.getX() >= screenWidth) {
@@ -114,12 +128,10 @@ public class ArrayList extends Module {
 
                 float tLeft = leftSide + 2.0f;
                 float tTop = (float) translate.getY();
-                float tW = moduleWidth;
-                float tH = bottom;
                 textMinX = Math.min(textMinX, tLeft);
                 textMinY = Math.min(textMinY, tTop);
-                textMaxX = Math.max(textMaxX, tLeft + tW);
-                textMaxY = Math.max(textMaxY, tTop + tH);
+                textMaxX = Math.max(textMaxX, tLeft + moduleWidth);
+                textMaxY = Math.max(textMaxY, tTop + bottom);
             }
 
             if (!moduleRects.isEmpty()) {
@@ -154,13 +166,21 @@ public class ArrayList extends Module {
                     maxX = Math.max(maxX, rect[0] + rect[2]);
                     maxY = Math.max(maxY, rect[1] + rect[3]);
                 }
+                int r = Math.max(0, round.getValue());
                 PostProcessing.drawBlur(minX, minY, maxX, maxY, () -> () -> {
                     GlStateManager.enableBlend();
                     GlStateManager.disableTexture2D();
                     GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
                     epilogue.util.render.RenderUtil.setup2DRendering(() -> {
-                        for (float[] rect : moduleRects) {
-                            net.minecraft.client.gui.Gui.drawRect((int) rect[0], (int) rect[1], (int) (rect[0] + rect[2]), (int) (rect[1] + rect[3]), -1);
+                        if (r > 0) {
+                            for (float[] rect : moduleRects) {
+                                float by = rect[1] - r;
+                                drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(-1, true));
+                            }
+                        } else {
+                            for (float[] rect : moduleRects) {
+                                net.minecraft.client.gui.Gui.drawRect((int) rect[0], (int) rect[1], (int) (rect[0] + rect[2]), (int) (rect[1] + rect[3]), -1);
+                            }
                         }
                     });
                     GlStateManager.enableTexture2D();
@@ -169,9 +189,17 @@ public class ArrayList extends Module {
             }
 
             if (backgroundValue.getValue()) {
-                for (float[] rect : moduleRects) {
-                    RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3],
-                        new Color(21, 21, 21, (int)bgAlpha.getValue().floatValue()).getRGB());
+                int r = Math.max(0, round.getValue());
+                if (r > 0) {
+                    for (float[] rect : moduleRects) {
+                        float by = rect[1] - r;
+                        drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(21, 21, 21, (int)bgAlpha.getValue().floatValue()));
+                    }
+                } else {
+                    for (float[] rect : moduleRects) {
+                        RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3],
+                                new Color(21, 21, 21, (int) bgAlpha.getValue().floatValue()).getRGB());
+                    }
                 }
             }
 
@@ -179,19 +207,31 @@ public class ArrayList extends Module {
                 Framebuffer bloomBuffer = PostProcessing.beginBloom();
                 if (bloomBuffer != null) {
                     int index = 0;
-                    for (float[] rect : moduleRects) {
-                        int color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
-                                ? interfaceModule.color(index)
-                                : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
-                        RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3], ColorUtil.swapAlpha(color, 255));
-                        index++;
+                    int r = Math.max(0, round.getValue());
+                    if (r > 0) {
+                        for (float[] rect : moduleRects) {
+                            int color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
+                                    ? interfaceModule.color(index)
+                                    : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
+                            float by = rect[1] - r;
+                            drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(ColorUtil.swapAlpha(color, 255), true));
+                            index++;
+                        }
+                    } else {
+                        int color;
+                        for (float[] rect : moduleRects) {
+                            color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
+                                    ? interfaceModule.color(index)
+                                    : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
+                            RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3], ColorUtil.swapAlpha(color, 255));
+                            index++;
+                        }
                     }
                     PostProcessing.endBloom(bloomBuffer);
                 }
             }
 
             yValue = y;
-            count = 1;
 
             for (Module module : enabledMods) {
                 if (module.isHidden()) continue;
@@ -219,25 +259,31 @@ public class ArrayList extends Module {
                 switch (rectangleValue.getModeString()) {
                     case "Top":
                         if (count == 1) {
-                            Gui.drawRect((int)bgLeft, (int)bgTop,
-                                (int)(bgLeft + bgWidth), (int)(bgTop + 1),
-                                interfaceModule.color(count));
+                            if (interfaceModule != null) {
+                                Gui.drawRect((int)bgLeft, (int)bgTop,
+                                    (int)(bgLeft + bgWidth), (int)(bgTop + 1),
+                                    interfaceModule.color(count));
+                            }
                         }
                         break;
                     case "Side":
-                        Gui.drawRect((int)(bgLeft + bgWidth), (int)bgTop,
-                            (int)(bgLeft + bgWidth + 1), (int)(bgTop + bgHeight),
-                            interfaceModule.color(count));
+                        if (interfaceModule != null) {
+                            Gui.drawRect((int)(bgLeft + bgWidth), (int)bgTop,
+                                (int)(bgLeft + bgWidth + 1), (int)(bgTop + bgHeight),
+                                interfaceModule.color(count));
+                        }
                         break;
                 }
 
                 String moduleName = module.getName();
                 String moduleTag = getFormattedTag(module.getTag());
 
-                FontRenderer.drawStringWithShadow(moduleName,
-                        textLeft,
-                        textTop,
-                        interfaceModule.color(count));
+                if (interfaceModule != null) {
+                    FontRenderer.drawStringWithShadow(moduleName,
+                            textLeft,
+                            textTop,
+                            interfaceModule.color(count));
+                }
 
                 if (!moduleTag.isEmpty()) {
                     float nameWidth = FontRenderer.getStringWidth(moduleName);
@@ -266,7 +312,7 @@ public class ArrayList extends Module {
                 if (!module.isEnabled() && moduleAnimation.finished(Direction.BACKWARDS)) continue;
 
                 float moduleWidth = FontRenderer.getStringWidth(module.getName() + getFormattedTag(module.getTag()));
-                float xValue = alignRight ? (anchorRightX - moduleWidth - 1.0f) : (anchorLeftX + 1.0f);
+                float xValue = alignRight ? (x - moduleWidth - 1.0f) : (x + 1.0f);
                 float bgWidth = moduleWidth + 4;
                 float bgHeight = FontRenderer.getFontHeight() + fontHeight;
                 float leftSide = xValue - (alignRight ? 2.0f : 0.0f);
@@ -277,12 +323,10 @@ public class ArrayList extends Module {
 
                 float tLeft = leftSide + 2.0f;
                 float tTop = yValue;
-                float tW = moduleWidth;
-                float tH = bgHeight;
                 textMinX = Math.min(textMinX, tLeft);
                 textMinY = Math.min(textMinY, tTop);
-                textMaxX = Math.max(textMaxX, tLeft + tW);
-                textMaxY = Math.max(textMaxY, tTop + tH);
+                textMaxX = Math.max(textMaxX, tLeft + moduleWidth);
+                textMaxY = Math.max(textMaxY, tTop + bgHeight);
 
                 yValue += (float) (moduleAnimation.getOutput() * (FontRenderer.getFontHeight() + fontHeight));
             }
@@ -319,13 +363,21 @@ public class ArrayList extends Module {
                     maxX = Math.max(maxX, rect[0] + rect[2]);
                     maxY = Math.max(maxY, rect[1] + rect[3]);
                 }
+                int r = Math.max(0, round.getValue());
                 PostProcessing.drawBlur(minX, minY, maxX, maxY, () -> () -> {
                     GlStateManager.enableBlend();
                     GlStateManager.disableTexture2D();
                     GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
                     epilogue.util.render.RenderUtil.setup2DRendering(() -> {
-                        for (float[] rect : moduleRects) {
-                            net.minecraft.client.gui.Gui.drawRect((int) rect[0], (int) rect[1], (int) (rect[0] + rect[2]), (int) (rect[1] + rect[3]), -1);
+                        if (r > 0) {
+                            for (float[] rect : moduleRects) {
+                                float by = rect[1] - r;
+                                drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(-1, true));
+                            }
+                        } else {
+                            for (float[] rect : moduleRects) {
+                                net.minecraft.client.gui.Gui.drawRect((int) rect[0], (int) rect[1], (int) (rect[0] + rect[2]), (int) (rect[1] + rect[3]), -1);
+                            }
                         }
                     });
                     GlStateManager.enableTexture2D();
@@ -334,9 +386,17 @@ public class ArrayList extends Module {
             }
 
             if (backgroundValue.getValue()) {
-                for (float[] rect : moduleRects) {
-                    RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3],
-                        new Color(21, 21, 21, (int)bgAlpha.getValue().floatValue()).getRGB());
+                int r = Math.max(0, round.getValue());
+                if (r > 0) {
+                    for (float[] rect : moduleRects) {
+                        float by = rect[1] - r;
+                        drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(21, 21, 21, (int)bgAlpha.getValue().floatValue()));
+                    }
+                } else {
+                    for (float[] rect : moduleRects) {
+                        RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3],
+                                new Color(21, 21, 21, (int) bgAlpha.getValue().floatValue()).getRGB());
+                    }
                 }
             }
 
@@ -344,18 +404,29 @@ public class ArrayList extends Module {
                 Framebuffer bloomBuffer = PostProcessing.beginBloom();
                 if (bloomBuffer != null) {
                     int index = 0;
-                    for (float[] rect : moduleRects) {
-                        int color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
-                                ? interfaceModule.color(index)
-                                : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
-                        RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3], ColorUtil.swapAlpha(color, 255));
-                        index++;
+                    int r = Math.max(0, round.getValue());
+                    if (r > 0) {
+                        for (float[] rect : moduleRects) {
+                            int color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
+                                    ? interfaceModule.color(index)
+                                    : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
+                            float by = rect[1] - r;
+                            drawBottomRoundedRow(rect[0], by, rect[2], rect[3] + r, r, new Color(ColorUtil.swapAlpha(color, 255), true));
+                            index++;
+                        }
+                    } else {
+                        int color;
+                        for (float[] rect : moduleRects) {
+                            color = epilogue.module.modules.render.PostProcessing.isArrayListBloomFromInterface() && interfaceModule != null
+                                    ? interfaceModule.color(index)
+                                    : epilogue.module.modules.render.PostProcessing.getBloomColor(index);
+                            RenderUtil.drawRect(rect[0], rect[1], rect[2], rect[3], ColorUtil.swapAlpha(color, 255));
+                            index++;
+                        }
                     }
                     PostProcessing.endBloom(bloomBuffer);
                 }
             }
-
-            yValue = y;
 
             for (Module module : enabledMods) {
                 if (module.isHidden()) continue;
@@ -368,7 +439,7 @@ public class ArrayList extends Module {
                 float bgWidth = moduleWidth + 4;
                 float bgHeight = FontRenderer.getFontHeight() + fontHeight;
 
-                float baseX = alignRight ? (anchorRightX - moduleWidth - 1.0f) : (anchorLeftX + 1.0f);
+                float baseX = alignRight ? (x - moduleWidth - 1.0f) : (x + 1.0f);
                 float bgLeft = baseX - (alignRight ? 2.0f : 0.0f);
                 float bgTop = yValue;
 
@@ -393,7 +464,10 @@ public class ArrayList extends Module {
                         break;
                 }
 
-                int textcolor = ColorUtil.swapAlpha(interfaceModule.color(count), alphaAnimation * 255);
+                int textcolor = 0;
+                if (interfaceModule != null) {
+                    textcolor = ColorUtil.swapAlpha(interfaceModule.color(count), alphaAnimation * 255);
+                }
 
                 switch (rectangleValue.getModeString()) {
                     case "Top":

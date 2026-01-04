@@ -16,6 +16,7 @@ import epilogue.module.Module;
 import epilogue.util.render.ColorUtil;
 import epilogue.util.render.PostProcessing;
 import epilogue.util.render.RenderUtil;
+import epilogue.value.values.IntValue;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
@@ -32,6 +33,8 @@ public class PotionEffects extends Module {
     private float currentHeight = 0.0f;
 
     private final ResourceLocation inventoryTexture = new ResourceLocation("textures/gui/container/inventory.png");
+
+    public final IntValue round = new IntValue("Round", 20, 0, 30);
 
     public PotionEffects() {
         super("PotionEffects", false);
@@ -106,18 +109,24 @@ public class PotionEffects extends Module {
 
         Framebuffer bloomBuffer = PostProcessing.beginBloom();
         if (bloomBuffer != null) {
-            RenderUtil.drawRoundedRect(x, y, width, height, 4, epilogue.module.modules.render.PostProcessing.getBloomColor());
+            int r = Math.max(0, round.getValue());
+            RenderUtil.drawRoundedRect(x, y, width, height, r, epilogue.module.modules.render.PostProcessing.getBloomColor());
             mc.getFramebuffer().bindFramebuffer(false);
         }
 
-        PostProcessing.drawBlur(x, y, x + width, y + height, () -> () -> RenderUtil.drawRoundedRect(x, y, width, height, 4, -1));
+        int r = Math.max(0, round.getValue());
+        if (r > 0) {
+            PostProcessing.drawBlur(x, y, x + width, y + height, () -> () -> RenderUtil.drawRoundedRect(x, y, width, height, r, -1));
+        } else {
+            PostProcessing.drawBlurRect(x, y, x + width, y + height);
+        }
 
         Interface interfaceModule = (Interface) Epilogue.moduleManager.getModule("Interface");
         int accent = interfaceModule != null ? interfaceModule.color(0) : 0xFF80FF95;
 
         Color bg = new Color(0, 0, 0, 130);
 
-        RenderUtil.drawRoundedRect(x, y, width, height, 4, bg);
+        RenderUtil.drawRoundedRect(x, y, width, height, r, bg);
 
         float titleX = x + width / 2f - titleWidth / 2f;
         CustomFontRenderer.drawStringWithShadow(title, titleX, y + padding + 2f, 0xFFFFFFFF, font);
