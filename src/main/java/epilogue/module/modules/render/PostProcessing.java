@@ -14,10 +14,9 @@ public class PostProcessing extends Module {
 
     public final BooleanValue blur = new BooleanValue("Blur", true);
     public final IntValue blurStrength = new IntValue("Blur Strength", 12, 1, 200);
-
-    public final BooleanValue testGlow = new BooleanValue("TestGlow", false);
-
     public final BooleanValue bloom = new BooleanValue("Bloom", false);
+    public final BooleanValue targetHUDGlow = new BooleanValue("TargetHUD Glow", false);
+    public final BooleanValue arrayListGlow = new BooleanValue("ArrayList Glow", false);
     public final ModeValue bloomColorMode = new ModeValue("Bloom Color Mode", 0, new String[]{"Custom", "Dynamic", "Rainbow", "Astolfo", "Fade", "Interface"});
     public final FloatValue bloomColorSpeed = new FloatValue("Bloom Color Speed", 2.0f, 1.0f, 10.0f);
     public final ColorValue bloomMainColor = new ColorValue("Bloom Color", 0xFF000000);
@@ -50,8 +49,12 @@ public class PostProcessing extends Module {
         return instance != null && instance.isEnabled() && instance.bloom.getValue();
     }
 
-    public static boolean isTestGlowEnabled() {
-        return instance != null && instance.isEnabled() && instance.testGlow.getValue();
+    public static boolean isTargetHUDGlowEnabled() {
+        return instance != null && instance.isEnabled() && instance.targetHUDGlow.getValue();
+    }
+
+    public static boolean isArrayListGlowEnabled() {
+        return instance != null && instance.isEnabled() && instance.arrayListGlow.getValue();
     }
 
     public static int getBloomIterations() {

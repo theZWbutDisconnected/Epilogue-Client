@@ -24,14 +24,6 @@ public class PostProcessing {
         internalBloomSuppressed = suppressed;
     }
 
-    public static void applyTestGlow() {
-        if (!OpenGlHelper.isFramebufferEnabled()) return;
-        if (!epilogue.module.modules.render.PostProcessing.isTestGlowEnabled()) return;
-        BloomShader.renderBloom(mc.getFramebuffer().framebufferTexture,
-                epilogue.module.modules.render.PostProcessing.getBloomIterations(),
-                Math.max(1, epilogue.module.modules.render.PostProcessing.getBloomOffset()));
-    }
-
     public static void drawBlur(float x, float y, float x2, float y2, Supplier<Runnable> maskDrawer) {
         if (!OpenGlHelper.isFramebufferEnabled()) return;
         if (!epilogue.module.modules.render.PostProcessing.isBlurEnabled()) {
@@ -109,8 +101,7 @@ public class PostProcessing {
 
     public static Framebuffer beginBloom() {
         if (internalBloomSuppressed) return null;
-        if (!epilogue.module.modules.render.PostProcessing.isBloomEnabled()
-                && !epilogue.module.modules.render.PostProcessing.isTestGlowEnabled()) {
+        if (!epilogue.module.modules.render.PostProcessing.isBloomEnabled()) {
             return null;
         }
         return BloomShader.beginFramebuffer();
