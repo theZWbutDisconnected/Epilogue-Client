@@ -27,6 +27,7 @@ public class GuiChat extends GuiScreen {
     private boolean playerNamesFound;
     private int autocompleteIndex;
     private final List<String> foundPlayerNames = new ArrayList<>();
+    private boolean waitingOnAutocomplete;
     protected GuiTextField inputField;
     private String defaultInputFieldText = "";
     private float openAnim = 0.0f;
@@ -128,6 +129,25 @@ public class GuiChat extends GuiScreen {
         this.inputField.textboxKeyTyped(typedChar, keyCode);
     }
 
+    public void onAutocompleteResponse(String[] completions) {
+        if (!this.waitingOnAutocomplete) {
+            return;
+        }
+
+        this.waitingOnAutocomplete = false;
+        this.foundPlayerNames.clear();
+        for (String s : completions) {
+            if (s != null) {
+                this.foundPlayerNames.add(s);
+            }
+        }
+
+        if (!this.foundPlayerNames.isEmpty()) {
+            this.playerNamesFound = true;
+            this.autocompletePlayerNames();
+        }
+    }
+
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         if (mouseButton == 0) {
@@ -199,7 +219,7 @@ public class GuiChat extends GuiScreen {
             int i = this.inputField.func_146197_a(-1, this.inputField.getCursorPosition(), false);
             this.foundPlayerNames.clear();
             this.autocompleteIndex = 0;
-            String s = this.inputField.getText().substring(i).toLowerCase();
+            String s = this.inputField.getText().substring(i);
             String s1 = this.inputField.getText().substring(0, this.inputField.getCursorPosition());
             this.sendAutocompleteRequest(s1, s);
             if (this.foundPlayerNames.isEmpty()) {
@@ -225,6 +245,7 @@ public class GuiChat extends GuiScreen {
 
     private void sendAutocompleteRequest(String leftOfCursor, String rightOfCursor) {
         if (!leftOfCursor.isEmpty()) {
+            this.waitingOnAutocomplete = true;
             BlockPos blockpos = null;
             if (this.mc.objectMouseOver != null && this.mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
                 blockpos = this.mc.objectMouseOver.getBlockPos();

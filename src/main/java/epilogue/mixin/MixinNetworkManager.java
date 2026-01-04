@@ -7,6 +7,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import epilogue.event.EventManager;
 import epilogue.event.types.EventType;
 import epilogue.events.PacketEvent;
+import epilogue.ui.chat.GuiChat;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.INetHandlerPlayClient;
@@ -14,10 +15,12 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.Future;
 
 @SideOnly(Side.CLIENT)
@@ -38,12 +41,63 @@ public abstract class MixinNetworkManager {
             if (Epilogue.delayManager != null && Epilogue.delayManager.shouldDelay((Packet<INetHandlerPlayClient>) packet)) {
                 callbackInfo.cancel();
             } else {
+                epilogue$handleTabCompleteResponse(packet);
                 PacketEvent event = new PacketEvent(EventType.RECEIVE, packet);
                 EventManager.call(event);
                 if (event.isCancelled()) {
                     callbackInfo.cancel();
                 }
             }
+        }
+    }
+
+    @Unique
+    private void epilogue$handleTabCompleteResponse(Packet<?> packet) {
+        String name = packet.getClass().getName();
+        if (!name.startsWith("net.minecraft.network.play.server")) {
+            return;
+        }
+        if (!name.contains("TabComplete")) {
+            return;
+        }
+
+        if (this.channel == null) {
+            return;
+        }
+
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        if (mc == null || mc.currentScreen == null) {
+            return;
+        }
+
+        try {
+            Method getter = null;
+            for (Method m : packet.getClass().getMethods()) {
+                if (m.getParameterTypes().length == 0 && m.getReturnType().isArray() && m.getReturnType().getComponentType() == String.class) {
+                    getter = m;
+                    break;
+                }
+            }
+            if (getter == null) {
+                return;
+            }
+            String[] matches = (String[]) getter.invoke(packet);
+            if (matches == null) {
+                return;
+            }
+
+            if (mc.currentScreen instanceof GuiChat) {
+                ((GuiChat) mc.currentScreen).onAutocompleteResponse(matches);
+                return;
+            }
+
+            for (Method m : mc.currentScreen.getClass().getMethods()) {
+                if (m.getName().equals("onAutocompleteResponse") && m.getParameterTypes().length == 1 && m.getParameterTypes()[0].isArray() && m.getParameterTypes()[0].getComponentType() == String.class) {
+                    m.invoke(mc.currentScreen, (Object) matches);
+                    return;
+                }
+            }
+        } catch (Throwable ignored) {
         }
     }
 
