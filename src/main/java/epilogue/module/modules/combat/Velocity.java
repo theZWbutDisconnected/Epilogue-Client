@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.Packet;
-
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S19PacketEntityStatus;
 import net.minecraft.network.play.server.S27PacketExplosion;
@@ -21,13 +20,19 @@ import epilogue.util.ChatUtil;
 import epilogue.event.EventTarget;
 import epilogue.event.types.EventType;
 import epilogue.events.*;
-
 import epilogue.management.RotationState;
 import epilogue.module.Module;
 import net.minecraft.util.AxisAlignedBB;
+import java.util.Random;
+import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 
 public class Velocity extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Random random = new Random();
+    private static final DecimalFormat df = new DecimalFormat("0.000000000000");
 
     private int chanceCounter = 0;
     private boolean pendingExplosion = false;
@@ -40,13 +45,76 @@ public class Velocity extends Module {
     private int delayTicksLeft = 0;
     private int airDelayTicksLeft = 0;
     private boolean delayedVelocityActive = false;
-    private int attackReduceTicksLeft = 0;
-    private boolean attackReduceApplied = false;
+
     private boolean reduceActive = false;
     private int reduceVelocityTicks = 0;
     private int reduceOffGroundTicks = 0;
     private int reduceTicksSinceTeleport = 0;
     private boolean reduceReceiving = false;
+
+    private boolean watchdogJump = false;
+    private boolean watchdogActive = false;
+    private boolean watchdogReceiving = false;
+    private final ArrayList<Packet> watchdogPackets = new ArrayList<>();
+    private int watchdogTicksSinceTeleport = 0;
+    private int watchdogTicksSinceVelocity = 0;
+    private int watchdogOffGroundTicks = 0;
+
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Vanilla", "JumpReset", "Reduce", "Watchdog"});
+
+    // Vanilla
+    public final PercentValue horizontal = new PercentValue("Horizontal", 100, () -> this.mode.getValue() == 0);
+    public final PercentValue vertical = new PercentValue("Vertical", 100, () -> this.mode.getValue() == 0);
+    public final PercentValue explosionHorizontal = new PercentValue("Explosion Horizontal", 100, () -> this.mode.getValue() == 0);
+    public final PercentValue explosionVertical = new PercentValue("Explosion Vertical", 100, () -> this.mode.getValue() == 0);
+    public final PercentValue chance = new PercentValue("Chance", 100);
+    public final BooleanValue fakeCheck = new BooleanValue("Check Fake", true);
+
+    // JumpReset
+    public final BooleanValue airDelay = new BooleanValue("Air Delay", false, () -> this.mode.getValue() == 1);
+    public final IntValue airDelayTicks = new IntValue("Air Delay Ticks", 3, 1, 20, () -> this.mode.getValue() == 1 && this.airDelay.getValue());
+
+    // Reduce
+    public final BooleanValue mixDelay = new BooleanValue("Delay", true, () -> this.mode.getValue() == 2);
+    public final IntValue mixDelayTicks = new IntValue("Delay Ticks", 1, 1, 20, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
+    public final BooleanValue mixDelayOnlyInGround = new BooleanValue("Delay Only In Ground", true, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
+    public final BooleanValue mixReduce = new BooleanValue("Reduce", false, () -> this.mode.getValue() == 2);
+    public final BooleanValue mixJumpReset = new BooleanValue("Jump Reset", true, () -> this.mode.getValue() == 2);
+    public final BooleanValue mixRotate = new BooleanValue("Rotate", false, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue());
+    public final BooleanValue mixRotateOnlyInGround = new BooleanValue("Rotate Only In Ground", true, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
+    public final BooleanValue mixAutoMove = new BooleanValue("Auto Move", true, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
+    public final IntValue mixRotateTicks = new IntValue("Rotate Ticks", 3, 1, 20, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
+
+    // Watchdog
+    public final PercentValue watchdogChance = new PercentValue("Chance", 100, () -> this.mode.getValue() == 3);
+    public final BooleanValue watchdogLegitTiming = new BooleanValue("Legit Timing", false, () -> this.mode.getValue() == 3);
+
+    public Velocity() {
+        super("Velocity", false);
+    }
+
+    private void processWatchdogPackets() {
+        if (mc.getNetHandler() == null || watchdogPackets.isEmpty()) return;
+
+        for (Packet packet : watchdogPackets) {
+            try {
+                packet.processPacket(mc.getNetHandler());
+            } catch (Exception e) {
+                try {
+                    if (packet instanceof S12PacketEntityVelocity) {
+                        ((S12PacketEntityVelocity) packet).processPacket(mc.getNetHandler());
+                    } else if (packet instanceof S08PacketPlayerPosLook) {
+                        ((S08PacketPlayerPosLook) packet).processPacket(mc.getNetHandler());
+                    } else if (packet instanceof S19PacketEntityStatus) {
+                        ((S19PacketEntityStatus) packet).processPacket(mc.getNetHandler());
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        watchdogPackets.clear();
+    }
 
     private EntityPlayer getNearestPlayerTarget() {
         if (mc.theWorld == null || mc.thePlayer == null) return null;
@@ -64,8 +132,28 @@ public class Velocity extends Module {
         return best;
     }
 
-    private boolean isInWeb(EntityPlayer player) {
-        return player != null && ((IAccessorEntity) player).getIsInWeb();
+    private Entity getNearTarget() {
+        try {
+            Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
+            if (aura != null && aura.isEnabled()) {
+                Entity target = aura.getTarget();
+                if (target != null) {
+                    return target;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return getNearestPlayerTarget();
+    }
+
+    private boolean isInWeb(Entity entity) {
+        if (entity == null) return false;
+        try {
+            return ((IAccessorEntity) entity).getIsInWeb();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTargetInRaycastRange(Entity entity) {
@@ -75,36 +163,34 @@ public class Velocity extends Module {
         return RotationUtil.rayTrace(bb, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, 3.0) != null;
     }
 
-    public final ModeValue mode = new ModeValue("mode", 0, new String[]{"Vanilla", "JumpReset", "Reduce"});
-
-    // Vanilla
-    public final PercentValue horizontal = new PercentValue("Horizontal", 100, () -> this.mode.getValue() == 0);
-    public final PercentValue vertical = new PercentValue("Vertical", 100, () -> this.mode.getValue() == 0);
-    public final PercentValue explosionHorizontal = new PercentValue("Explosions Horizontal", 100, () -> this.mode.getValue() == 0);
-    public final PercentValue explosionVertical = new PercentValue("Explosions Vertical", 100, () -> this.mode.getValue() == 0);
-    public final PercentValue chance = new PercentValue("Change", 100);
-    public final BooleanValue fakeCheck = new BooleanValue("Check Fake", true);
-
-    // JumpReset
-    public final BooleanValue airDelay = new BooleanValue("Air Delay", false, () -> this.mode.getValue() == 1);
-    public final IntValue airDelayTicks = new IntValue("Air Delay Ticks", 3, 1, 20, () -> this.mode.getValue() == 1 && this.airDelay.getValue());
-
-    // Mix
-    public final BooleanValue mixDelay = new BooleanValue("Delay", true, () -> this.mode.getValue() == 2);
-    public final IntValue mixDelayTicks = new IntValue("Delay Ticks", 1, 1, 20, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
-    public final BooleanValue mixDelayOnlyInGround = new BooleanValue("Delay Only In Ground", true, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
-    public final BooleanValue mixReduce = new BooleanValue("Reduce", false, () -> this.mode.getValue() == 2);
-    public final BooleanValue mixJumpReset = new BooleanValue("Jump Reset", true, () -> this.mode.getValue() == 2);
-    public final BooleanValue mixRotate = new BooleanValue("Rotate", false, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue());
-    public final BooleanValue mixRotateOnlyInGround = new BooleanValue("Rotate Only In Ground", true, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
-    public final BooleanValue mixAutoMove = new BooleanValue("Auto Move", true, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
-    public final IntValue mixRotateTicks = new IntValue("Rotate Ticks", 3, 1, 20, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
-
-    public Velocity() {
-        super("Velocity", false);
+    private boolean watchdogIsTargetInRaycastRange(Entity target, double range) {
+        if (target == null || mc.thePlayer == null) {
+            return false;
+        }
+        AxisAlignedBB bb = target.getEntityBoundingBox();
+        if (bb == null) return false;
+        return RotationUtil.rayTrace(bb, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, (float)range) != null;
     }
 
-    private boolean isMix() { return this.mode.getValue() == 2; }
+    private boolean isMoving() {
+        return mc.thePlayer != null && (Math.abs(mc.thePlayer.motionX) > 0.01 || Math.abs(mc.thePlayer.motionZ) > 0.01 ||
+                mc.thePlayer.movementInput.moveForward != 0 || mc.thePlayer.movementInput.moveStrafe != 0);
+    }
+
+    private boolean checks() {
+        if (mc.thePlayer == null) return false;
+        return isInWeb(mc.thePlayer) || mc.thePlayer.isInLava() || mc.thePlayer.isBurning() || mc.thePlayer.isInWater();
+    }
+
+    private boolean isInBadPosition() {
+        if (mc.thePlayer == null) return false;
+        return isInWeb(mc.thePlayer) || mc.thePlayer.isOnLadder() || mc.thePlayer.isInWater() || mc.thePlayer.isInLava();
+    }
+
+    private boolean isVanilla() { return this.mode.getValue() == 0; }
+    private boolean isJumpReset() { return this.mode.getValue() == 1; }
+    private boolean isReduce() { return this.mode.getValue() == 2; }
+    private boolean isWatchdog() { return this.mode.getValue() == 3; }
 
     private void startRotate(double knockbackX, double knockbackZ) {
         endRotate();
@@ -152,10 +238,10 @@ public class Velocity extends Module {
             } else {
                 this.chanceCounter = this.chanceCounter % 100 + this.chance.getValue();
                 if (this.chanceCounter >= 100) {
-                    boolean doJumpReset = (this.mode.getValue() == 1) || (this.isMix() && this.mixJumpReset.getValue());
+                    boolean doJumpReset = (this.mode.getValue() == 1) || (this.isReduce() && this.mixJumpReset.getValue());
                     boolean canDoJumpReset = doJumpReset && event.getY() > 0.0;
 
-                    if (this.isMix() && this.mixJumpReset.getValue() && this.mixRotate.getValue() && canDoJumpReset) {
+                    if (this.isReduce() && this.mixJumpReset.getValue() && this.mixRotate.getValue() && canDoJumpReset) {
                         boolean shouldRotate;
                         if (this.mixRotateOnlyInGround.getValue() && mc.thePlayer.onGround) {
                             shouldRotate = true;
@@ -209,26 +295,76 @@ public class Velocity extends Module {
 
         Packet<?> packet = event.getPacket();
 
-        if (this.isMix() && this.mixReduce.getValue() && packet instanceof S12PacketEntityVelocity) {
+        if (this.isWatchdog() && packet instanceof S12PacketEntityVelocity) {
             S12PacketEntityVelocity vel = (S12PacketEntityVelocity) packet;
             if (vel.getEntityID() == mc.thePlayer.getEntityId()) {
+                if (random.nextInt(100) > this.watchdogChance.getValue()) {
+                    return;
+                }
 
+                Entity target = this.getNearTarget();
+
+                if (watchdogReceiving ||
+                        watchdogTicksSinceTeleport < 3 ||
+                        isInWeb(mc.thePlayer) ||
+                        mc.thePlayer.isSwingInProgress ||
+                        (target != null && mc.thePlayer.getDistanceToEntity(target) <= 3.2)) {
+                    return;
+                }
+
+                watchdogPackets.add(vel);
+                watchdogActive = true;
+                event.setCancelled(true);
+
+                watchdogTicksSinceVelocity = 0;
+
+                if ((double)vel.getMotionY() / 8000.0 > 0) {
+                    watchdogJump = true;
+                }
+            }
+        }
+
+        if (this.isWatchdog() && packet instanceof S08PacketPlayerPosLook) {
+            S08PacketPlayerPosLook posPacket = (S08PacketPlayerPosLook) packet;
+            if (watchdogActive) {
+                watchdogPackets.add(posPacket);
+                event.setCancelled(true);
+            }
+        }
+
+        if (this.isWatchdog() && packet instanceof S19PacketEntityStatus) {
+            S19PacketEntityStatus status = (S19PacketEntityStatus) packet;
+            if (status.getEntity(mc.theWorld) == mc.thePlayer && status.getOpCode() == 2) {
+                watchdogTicksSinceVelocity = 0;
+            }
+        }
+
+        if (this.isReduce() && this.mixReduce.getValue() && packet instanceof S12PacketEntityVelocity) {
+            S12PacketEntityVelocity vel = (S12PacketEntityVelocity) packet;
+            if (vel.getEntityID() == mc.thePlayer.getEntityId()) {
                 reduceReceiving = true;
 
                 Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
                 if (aura != null && aura.isEnabled()) {
                     aura.getTarget();
                 }
-                boolean isBlocking = aura != null && aura.autoBlock.getValue() != 3 && aura.autoBlock.getValue() != 4 ? (aura.isPlayerBlocking() || aura.blockingState) : aura != null && aura.isBlocking();
-                boolean inBadPos = isInWeb(mc.thePlayer) || mc.thePlayer.isOnLadder() || mc.thePlayer.isInWater() || mc.thePlayer.isInLava();
-                if (reduceReceiving && reduceTicksSinceTeleport >= 3 && !inBadPos && !mc.thePlayer.isSwingInProgress && !isBlocking) {
+
+                boolean inBadPos = isInBadPosition();
+                boolean isBlocking = aura != null && aura.autoBlock.getValue() != 3 && aura.autoBlock.getValue() != 4 ?
+                        (aura.isPlayerBlocking() || aura.blockingState) :
+                        aura != null && aura.isBlocking();
+
+                boolean reduceCondition = reduceTicksSinceTeleport >= 3 && !inBadPos && !isBlocking;
+
+                if (reduceCondition) {
                     reduceActive = true;
                     reduceVelocityTicks = 0;
+                    ChatUtil.sendRaw("Reduce Successfully");
                 }
             }
         }
 
-        if (this.isMix() && this.mixReduce.getValue() && reduceActive && packet instanceof S32PacketConfirmTransaction) {
+        if (this.isReduce() && this.mixReduce.getValue() && reduceActive && packet instanceof S32PacketConfirmTransaction) {
             event.setCancelled(true);
             return;
         }
@@ -237,18 +373,17 @@ public class Velocity extends Module {
             S12PacketEntityVelocity vel = (S12PacketEntityVelocity) packet;
             if (vel.getEntityID() != mc.thePlayer.getEntityId()) return;
 
-            if (this.isMix()) {
+            if (this.isReduce()) {
                 if (this.mixDelay.getValue()) {
                     if (!this.mixDelayOnlyInGround.getValue() || mc.thePlayer.onGround) {
                         this.queueDelayedVelocity(event, vel, this.mixDelayTicks.getValue());
                         return;
                     }
                 }
-
                 return;
             }
 
-            if (this.mode.getValue() == 1 && this.airDelay.getValue() && !mc.thePlayer.onGround) {
+            if (this.isJumpReset() && this.airDelay.getValue() && !mc.thePlayer.onGround) {
                 Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
                 Epilogue.delayManager.delayedPacket.offer(vel);
                 event.setCancelled(true);
@@ -283,12 +418,91 @@ public class Velocity extends Module {
     public void onUpdate(UpdateEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null) return;
 
-        if (this.isMix() && this.mixReduce.getValue()) {
+        if (this.isWatchdog()) {
+            watchdogTicksSinceTeleport++;
+            watchdogTicksSinceVelocity++;
+
+            if (!mc.thePlayer.onGround) {
+                watchdogOffGroundTicks++;
+            } else {
+                watchdogOffGroundTicks = 0;
+            }
+
+            Entity target = this.getNearTarget();
+
+            if (target != null &&
+                    this.watchdogIsTargetInRaycastRange(target, 3.0) &&
+                    mc.thePlayer.isSwingInProgress &&
+                    watchdogTicksSinceVelocity < 3 &&
+                    !mc.thePlayer.onGround &&
+                    watchdogTicksSinceTeleport > 3) {
+
+                Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
+
+                if (aura != null && aura.isEnabled()) {
+
+                    if (mc.getNetHandler() != null) {
+                        mc.getNetHandler().addToSendQueue(
+                                new net.minecraft.network.play.client.C0APacketAnimation()
+                        );
+                    }
+
+                    if (mc.playerController != null) {
+                        mc.playerController.attackEntity(mc.thePlayer, target);
+                    }
+
+                    String motionXStr = df.format(mc.thePlayer.motionX);
+                    String motionZStr = df.format(mc.thePlayer.motionZ);
+                    ChatUtil.sendRaw("§bBillionaire §fMotion X: " + motionXStr + " | Motion Z: " + motionZStr);
+                }
+            }
+
+            if (watchdogActive && !watchdogReceiving && !watchdogPackets.isEmpty()) {
+                boolean shouldRelease = false;
+
+                if (mc.thePlayer.onGround) {
+                    shouldRelease = true;
+                }
+
+                if (watchdogTicksSinceTeleport < 3) {
+                    shouldRelease = true;
+                }
+
+                if (mc.thePlayer.isSwingInProgress) {
+                    shouldRelease = true;
+                }
+
+                if (target != null && mc.thePlayer.getDistanceToEntity(target) <= 3.2) {
+                    shouldRelease = true;
+                }
+
+                if (watchdogOffGroundTicks > 20) {
+                    shouldRelease = true;
+                }
+
+                if (shouldRelease) {
+                    watchdogReceiving = true;
+                    processWatchdogPackets();
+                    watchdogActive = false;
+                    watchdogReceiving = false;
+                }
+            }
+
+            if (this.watchdogLegitTiming.getValue() && watchdogActive) {
+                try {
+                    Thread.sleep(1 + random.nextInt(3));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        if (this.isReduce() && this.mixReduce.getValue()) {
             reduceReceiving = false;
             reduceTicksSinceTeleport++;
         }
 
-        if (this.isMix() && this.mixReduce.getValue() && event.getType() == EventType.PRE) {
+        if (this.isReduce() && this.mixReduce.getValue() && event.getType() == EventType.PRE) {
             if (!mc.thePlayer.onGround) {
                 reduceOffGroundTicks++;
             } else {
@@ -312,9 +526,11 @@ public class Velocity extends Module {
                     reduceVelocityTicks < 3 &&
                     !mc.thePlayer.onGround) {
 
-                boolean inBadPos = isInWeb(mc.thePlayer) || mc.thePlayer.isOnLadder() || mc.thePlayer.isInWater() || mc.thePlayer.isInLava();
+                boolean inBadPos = isInBadPosition();
                 boolean inRaycast = isTargetInRaycastRange(target);
+
                 boolean canReduce = !inBadPos && aura != null && aura.isEnabled() && inRaycast && reduceTicksSinceTeleport >= 3;
+
                 if (canReduce) {
                     int ab = aura.autoBlock.getValue();
                     if (ab == 3 || ab == 4) {
@@ -326,7 +542,10 @@ public class Velocity extends Module {
                 if (canReduce) {
                     mc.thePlayer.swingItem();
                     mc.playerController.attackEntity(mc.thePlayer, target);
-                    ChatUtil.sendRaw("[Velocity] AttackReduced!");
+                    ChatUtil.sendRaw("Attack");
+                    mc.thePlayer.motionX *= 0.6;
+                    mc.thePlayer.motionZ *= 0.6;
+                    mc.thePlayer.setSprinting(false);
                 }
             }
 
@@ -341,21 +560,7 @@ public class Velocity extends Module {
             }
         }
 
-        if (event.getType() == EventType.POST) {
-            if (this.attackReduceTicksLeft > 0) {
-                this.attackReduceTicksLeft--;
-                if (this.attackReduceTicksLeft <= 0) {
-                    if (this.attackReduceApplied) {
-                        Aura.attackBlocked = false;
-                        Aura.swingBlocked = false;
-                    }
-                    this.attackReduceApplied = false;
-                }
-            }
-        }
-
-        if (this.isMix() && event.getType() == EventType.PRE) {
-
+        if (this.isReduce() && event.getType() == EventType.PRE) {
             int maxTick = this.mixRotateTicks.getValue();
             if (this.rotateTickCounter > 0 && this.rotateTickCounter <= maxTick) {
                 if (this.rotateTickCounter == 1) {
@@ -370,30 +575,32 @@ public class Velocity extends Module {
             }
         }
 
-        if (this.isMix() && event.getType() == EventType.POST) {
-            int maxTick = this.mixRotateTicks.getValue();
-            if (this.rotateTickCounter > 0 && this.rotateTickCounter <= maxTick) {
-                this.rotateTickCounter++;
-                if (this.rotateTickCounter > maxTick) {
-                    this.endRotate();
+        if (event.getType() == EventType.POST) {
+            if (this.isReduce()) {
+                int maxTick = this.mixRotateTicks.getValue();
+                if (this.rotateTickCounter > 0 && this.rotateTickCounter <= maxTick) {
+                    this.rotateTickCounter++;
+                    if (this.rotateTickCounter > maxTick) {
+                        this.endRotate();
+                    }
                 }
-            }
 
-            if (this.delayedVelocityActive) {
-                if (this.airDelayTicksLeft > 0) {
-                    this.airDelayTicksLeft--;
-                    if (this.airDelayTicksLeft <= 0) {
-                        Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
+                if (this.delayedVelocityActive) {
+                    if (this.airDelayTicksLeft > 0) {
+                        this.airDelayTicksLeft--;
+                        if (this.airDelayTicksLeft <= 0) {
+                            Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
+                            this.delayedVelocityActive = false;
+                        }
+                    } else if (this.delayTicksLeft > 0) {
+                        this.delayTicksLeft--;
+                        if (this.delayTicksLeft <= 0) {
+                            Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
+                            this.delayedVelocityActive = false;
+                        }
+                    } else {
                         this.delayedVelocityActive = false;
                     }
-                } else if (this.delayTicksLeft > 0) {
-                    this.delayTicksLeft--;
-                    if (this.delayTicksLeft <= 0) {
-                        Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
-                        this.delayedVelocityActive = false;
-                    }
-                } else {
-                    this.delayedVelocityActive = false;
                 }
             }
         }
@@ -403,7 +610,7 @@ public class Velocity extends Module {
     public void onMoveInput(MoveInputEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null) return;
 
-        if (this.isMix()) {
+        if (this.isReduce()) {
             int maxTick = this.mixRotateTicks.getValue();
             if (this.rotateTickCounter > 0 && this.rotateTickCounter <= maxTick) {
                 if (this.mixAutoMove.getValue()) {
@@ -416,6 +623,11 @@ public class Velocity extends Module {
                     }
                 }
             }
+        }
+
+        if (this.isWatchdog() && watchdogJump && mc.thePlayer.onGround) {
+            mc.thePlayer.movementInput.jump = true;
+            watchdogJump = false;
         }
     }
 
@@ -442,8 +654,6 @@ public class Velocity extends Module {
         this.delayTicksLeft = 0;
         this.airDelayTicksLeft = 0;
         this.delayedVelocityActive = false;
-        this.attackReduceTicksLeft = 0;
-        this.attackReduceApplied = false;
         this.endRotate();
 
         reduceActive = false;
@@ -451,6 +661,14 @@ public class Velocity extends Module {
         reduceOffGroundTicks = 0;
         reduceTicksSinceTeleport = 0;
         reduceReceiving = false;
+
+        watchdogJump = false;
+        watchdogActive = false;
+        watchdogReceiving = false;
+        watchdogPackets.clear();
+        watchdogTicksSinceTeleport = 0;
+        watchdogTicksSinceVelocity = 0;
+        watchdogOffGroundTicks = 0;
     }
 
     @Override
@@ -466,15 +684,8 @@ public class Velocity extends Module {
         this.delayTicksLeft = 0;
         this.airDelayTicksLeft = 0;
         this.delayedVelocityActive = false;
-        if (this.attackReduceTicksLeft > 0) {
-            if (this.attackReduceApplied) {
-                Aura.attackBlocked = false;
-                Aura.swingBlocked = false;
-            }
-        }
-        this.attackReduceTicksLeft = 0;
-        this.attackReduceApplied = false;
         this.endRotate();
+
         if (Epilogue.delayManager.getDelayModule() == DelayModules.VELOCITY) {
             Epilogue.delayManager.setDelayState(false, DelayModules.VELOCITY);
         }
@@ -483,11 +694,25 @@ public class Velocity extends Module {
         reduceActive = false;
         reduceTicksSinceTeleport = 0;
         reduceReceiving = false;
+
+        if (!watchdogPackets.isEmpty()) {
+            processWatchdogPackets();
+        }
+        watchdogActive = false;
+        watchdogReceiving = false;
+        watchdogJump = false;
     }
 
     @Override
     public String[] getSuffix() {
         String modeName = this.mode.getModeString();
+        if (this.isWatchdog()) {
+            String chanceStr = this.watchdogChance.getValue() + "%";
+            if (this.watchdogLegitTiming.getValue()) {
+                return new String[]{"Watchdog", chanceStr, "Legit"};
+            }
+            return new String[]{"Watchdog", chanceStr};
+        }
         return new String[]{CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, modeName)};
     }
 }
