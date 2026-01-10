@@ -59,10 +59,10 @@ public class Velocity extends Module {
     private int watchdogTicksSinceTeleport = 0;
     private int watchdogTicksSinceVelocity = 0;
     private int watchdogOffGroundTicks = 0;
+    private boolean watchdogShouldJump = false;
 
-    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Vanilla", "JumpReset", "Reduce", "Watchdog"});
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Vanilla", "JumpReset", "Mix", "Watchdog"});
 
-    // Vanilla
     public final PercentValue horizontal = new PercentValue("Horizontal", 100, () -> this.mode.getValue() == 0);
     public final PercentValue vertical = new PercentValue("Vertical", 100, () -> this.mode.getValue() == 0);
     public final PercentValue explosionHorizontal = new PercentValue("Explosion Horizontal", 100, () -> this.mode.getValue() == 0);
@@ -70,11 +70,9 @@ public class Velocity extends Module {
     public final PercentValue chance = new PercentValue("Chance", 100);
     public final BooleanValue fakeCheck = new BooleanValue("Check Fake", true);
 
-    // JumpReset
     public final BooleanValue airDelay = new BooleanValue("Air Delay", false, () -> this.mode.getValue() == 1);
     public final IntValue airDelayTicks = new IntValue("Air Delay Ticks", 3, 1, 20, () -> this.mode.getValue() == 1 && this.airDelay.getValue());
 
-    // Reduce
     public final BooleanValue mixDelay = new BooleanValue("Delay", true, () -> this.mode.getValue() == 2);
     public final IntValue mixDelayTicks = new IntValue("Delay Ticks", 1, 1, 20, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
     public final BooleanValue mixDelayOnlyInGround = new BooleanValue("Delay Only In Ground", true, () -> this.mode.getValue() == 2 && this.mixDelay.getValue());
@@ -85,12 +83,47 @@ public class Velocity extends Module {
     public final BooleanValue mixAutoMove = new BooleanValue("Auto Move", true, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
     public final IntValue mixRotateTicks = new IntValue("Rotate Ticks", 3, 1, 20, () -> this.mode.getValue() == 2 && this.mixJumpReset.getValue() && this.mixRotate.getValue());
 
-    // Watchdog
     public final PercentValue watchdogChance = new PercentValue("Chance", 100, () -> this.mode.getValue() == 3);
     public final BooleanValue watchdogLegitTiming = new BooleanValue("Legit Timing", false, () -> this.mode.getValue() == 3);
 
     public Velocity() {
         super("Velocity", false);
+    }
+
+    @EventTarget
+    public void onPreMotion(PreMotionEvent event) {
+        if (!this.isEnabled() || !this.isWatchdog()) return;
+
+        watchdogShouldJump = false;
+    }
+
+    @EventTarget
+    public void onMove(MoveEvent event) {
+        if (!this.isEnabled() || !this.isWatchdog()) return;
+
+        if (watchdogShouldJump) {
+            event.setJump(true);
+        }
+    }
+
+    private boolean isAuraBlocking() {
+        try {
+            Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
+
+            if (aura == null || !aura.isEnabled()) {
+                return false;
+            }
+
+            int autoBlockValue = aura.autoBlock.getValue();
+
+            if (autoBlockValue != 3 && autoBlockValue != 4) {
+                return aura.isPlayerBlocking() || aura.blockingState;
+            } else {
+                return aura.isBlocking();
+            }
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void processWatchdogPackets() {
@@ -102,11 +135,11 @@ public class Velocity extends Module {
             } catch (Exception e) {
                 try {
                     if (packet instanceof S12PacketEntityVelocity) {
-                        ((S12PacketEntityVelocity) packet).processPacket(mc.getNetHandler());
+                        packet.processPacket(mc.getNetHandler());
                     } else if (packet instanceof S08PacketPlayerPosLook) {
-                        ((S08PacketPlayerPosLook) packet).processPacket(mc.getNetHandler());
+                        packet.processPacket(mc.getNetHandler());
                     } else if (packet instanceof S19PacketEntityStatus) {
-                        ((S19PacketEntityStatus) packet).processPacket(mc.getNetHandler());
+                        packet.processPacket(mc.getNetHandler());
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -308,6 +341,7 @@ public class Velocity extends Module {
                         watchdogTicksSinceTeleport < 3 ||
                         isInWeb(mc.thePlayer) ||
                         mc.thePlayer.isSwingInProgress ||
+                        isAuraBlocking() ||
                         (target != null && mc.thePlayer.getDistanceToEntity(target) <= 3.2)) {
                     return;
                 }
@@ -318,8 +352,9 @@ public class Velocity extends Module {
 
                 watchdogTicksSinceVelocity = 0;
 
-                if ((double)vel.getMotionY() / 8000.0 > 0) {
-                    watchdogJump = true;
+                double verticalMotion = (double)vel.getMotionY() / 8000.0;
+                if (verticalMotion > 0) {
+                    watchdogShouldJump = true;
                 }
             }
         }
@@ -430,8 +465,7 @@ public class Velocity extends Module {
 
             Entity target = this.getNearTarget();
 
-            if (target != null &&
-                    this.watchdogIsTargetInRaycastRange(target, 3.0) &&
+            if (this.watchdogIsTargetInRaycastRange(target, 3.0) &&
                     mc.thePlayer.isSwingInProgress &&
                     watchdogTicksSinceVelocity < 3 &&
                     !mc.thePlayer.onGround &&
@@ -669,6 +703,7 @@ public class Velocity extends Module {
         watchdogTicksSinceTeleport = 0;
         watchdogTicksSinceVelocity = 0;
         watchdogOffGroundTicks = 0;
+        watchdogShouldJump = false;
     }
 
     @Override
@@ -701,6 +736,7 @@ public class Velocity extends Module {
         watchdogActive = false;
         watchdogReceiving = false;
         watchdogJump = false;
+        watchdogShouldJump = false;
     }
 
     @Override
