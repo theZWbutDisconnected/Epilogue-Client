@@ -137,4 +137,69 @@ public class RotationUtil {
         Vec3 targetPos = eyePos.addVector(lookVec.xCoord * distance, lookVec.yCoord * distance, lookVec.zCoord * distance);
         return boundingBox.calculateIntercept(eyePos, targetPos);
     }
+
+    public static boolean watchdogIsTargetInRaycastRange(Entity target, double range) {
+        if (target == null || mc.thePlayer == null) {
+            return false;
+        }
+
+        try {
+            RayCastUtil.RayCastResult result = RayCastUtil.rayCast(
+                    new RotationVec(mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch),
+                    range,
+                    0.0f
+            );
+
+            return result != null &&
+                    result.typeOfHit == RayCastUtil.RayCastResult.Type.ENTITY &&
+                    result.entityHit == target;
+        } catch (Exception e) {
+            return rayTraceSimple(target, range);
+        }
+    }
+
+    private static boolean rayTraceSimple(Entity target, double range) {
+        if (target == null || mc.thePlayer == null) {
+            return false;
+        }
+        AxisAlignedBB bb = target.getEntityBoundingBox();
+        if (bb == null) return false;
+        return rayTrace(bb, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, range) != null;
+    }
+
+    public static boolean isEntityInView(Entity entity) {
+        try {
+            return RayCastUtil.inView(entity);
+        } catch (Exception e) {
+            if (entity == null || mc.thePlayer == null) return false;
+            return entity.getDistanceToEntity(mc.thePlayer) < 100.0f;
+        }
+    }
+
+    public static boolean isEntityVisible(Entity entity, double range) {
+        return watchdogIsTargetInRaycastRange(entity, range);
+    }
+
+    public static boolean isTargetInRaycastRange(Entity entity, double range) {
+        return watchdogIsTargetInRaycastRange(entity, range);
+    }
+
+    public static class RotationVec {
+        public float x;
+        public float y;
+
+        public RotationVec(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public RotationVec add(float x, float y) {
+            return new RotationVec(this.x + x, this.y + y);
+        }
+
+        public float getX() { return this.x; }
+        public float getY() { return this.y; }
+        public void setX(float x) { this.x = x; }
+        public void setY(float y) { this.y = y; }
+    }
 }

@@ -3,11 +3,11 @@ package epilogue.module.modules.combat;
 import com.google.common.base.CaseFormat;
 import epilogue.Epilogue;
 import epilogue.enums.DelayModules;
-import epilogue.util.ItemUtil;
-import epiloguemixinbridge.IAccessorEntity;
 import epilogue.util.MoveUtil;
+import epilogue.util.RayCastUtil;
 import epilogue.util.RotationUtil;
 import epilogue.value.values.*;
+import epiloguemixinbridge.IAccessorEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -16,6 +16,7 @@ import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S19PacketEntityStatus;
 import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraft.network.play.server.S32PacketConfirmTransaction;
+import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.world.World;
 import epilogue.util.ChatUtil;
 import epilogue.event.EventTarget;
@@ -25,10 +26,11 @@ import epilogue.management.RotationState;
 import epilogue.module.Module;
 import net.minecraft.util.AxisAlignedBB;
 import java.util.Random;
-import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.network.play.client.C0APacketAnimation;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class Velocity extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -53,16 +55,22 @@ public class Velocity extends Module {
     private int reduceTicksSinceTeleport = 0;
     private boolean reduceReceiving = false;
 
-    private boolean watchdogJump = false;
-    private boolean watchdogActive = false;
-    private boolean watchdogReceiving = false;
-    private final ArrayList<Packet> watchdogPackets = new ArrayList<>();
-    private int watchdogTicksSinceTeleport = 0;
-    private int watchdogTicksSinceVelocity = 0;
-    private int watchdogOffGroundTicks = 0;
-    private boolean watchdogShouldJump = false;
+    private boolean jump;
+    public static boolean active = false;
+    public static boolean receiving = false;
+    private final Deque<Packet<?>> delayedPackets = new ConcurrentLinkedDeque<>();
+    public int ticksSinceTeleport = 0;
+    public int ticksSinceVelocity = 0;
+    public int offGroundTicks = 0;
 
-    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Vanilla", "JumpReset", "Mix", "Watchdog"});
+    private static boolean slot;
+    private static boolean attack;
+    private static boolean swing;
+    private static boolean block;
+    private static boolean inventory;
+    private static boolean dig;
+
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Vanilla", "JumpReset", "Reduce", "Watchdog"});
 
     public final PercentValue horizontal = new PercentValue("Horizontal", 100, () -> this.mode.getValue() == 0);
     public final PercentValue vertical = new PercentValue("Vertical", 100, () -> this.mode.getValue() == 0);
@@ -86,51 +94,22 @@ public class Velocity extends Module {
 
     public final PercentValue watchdogChance = new PercentValue("Chance", 100, () -> this.mode.getValue() == 3);
     public final BooleanValue watchdogLegitTiming = new BooleanValue("Legit Timing", false, () -> this.mode.getValue() == 3);
+    public final BooleanValue onSwing = new BooleanValue("On Swing", true, () -> this.mode.getValue() == 3);
+    public final BooleanValue watchdogJumpReset = new BooleanValue("Jumpreset", true, () -> this.mode.getValue() == 3);
 
     public Velocity() {
         super("Velocity", false);
     }
 
-    @EventTarget
-    public void onPreMotion(PreMotionEvent event) {
-        if (!this.isEnabled() || !this.isWatchdog()) return;
+    private void releaseDelayedPackets() {
+        if (delayedPackets.isEmpty() || receiving) return;
 
-        watchdogShouldJump = false;
-    }
+        receiving = true;
+        active = false;
 
-    @EventTarget
-    public void onMove(MoveEvent event) {
-        if (!this.isEnabled() || !this.isWatchdog()) return;
+        if (mc.getNetHandler() == null || delayedPackets.isEmpty()) return;
 
-        if (watchdogShouldJump) {
-            event.setJump(true);
-        }
-    }
-
-    private boolean isAuraBlocking() {
-        try {
-            Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
-
-            if (aura == null || !aura.isEnabled()) {
-                return false;
-            }
-
-            int autoBlockValue = aura.autoBlock.getValue();
-
-            if (autoBlockValue != 3 && autoBlockValue != 4) {
-                return aura.isPlayerBlocking() || aura.blockingState;
-            } else {
-                return aura.isBlocking();
-            }
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private void processWatchdogPackets() {
-        if (mc.getNetHandler() == null || watchdogPackets.isEmpty()) return;
-
-        for (Packet packet : watchdogPackets) {
+        for (Packet packet : delayedPackets) {
             try {
                 packet.processPacket(mc.getNetHandler());
             } catch (Exception e) {
@@ -141,13 +120,105 @@ public class Velocity extends Module {
                         packet.processPacket(mc.getNetHandler());
                     } else if (packet instanceof S19PacketEntityStatus) {
                         packet.processPacket(mc.getNetHandler());
+                    } else if (packet instanceof S32PacketConfirmTransaction) {
+                        packet.processPacket(mc.getNetHandler());
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }
         }
-        watchdogPackets.clear();
+        delayedPackets.clear();
+        receiving = false;
+    }
+
+    @EventTarget
+    public void onPreMotion(PreMotionEvent event) {
+        if (!this.isEnabled() || !this.isWatchdog()) return;
+        this.jump = false;
+    }
+
+    @EventTarget
+    public void onMove(MoveEvent event) {
+        if (!this.isEnabled() || !this.isWatchdog()) return;
+        if (this.jump) {
+            event.setJump(true);
+        }
+    }
+
+    @EventTarget
+    public void onPacketReceiveEvent(PacketEvent event) {
+        if (!this.isEnabled() || event.getType() != EventType.RECEIVE || event.isCancelled()) return;
+
+        if (this.onSwing.getValue() && !mc.thePlayer.isSwingInProgress) {
+            return;
+        }
+
+        Packet<?> packet = event.getPacket();
+        if (packet instanceof S12PacketEntityVelocity) {
+            S12PacketEntityVelocity vel = (S12PacketEntityVelocity) packet;
+            if (vel.getEntityID() == mc.thePlayer.getEntityId() && vel.getMotionY() > 0) {
+                if (this.watchdogJumpReset.getValue()) {
+                    this.jump = true;
+                }
+            }
+        }
+    }
+
+    @EventTarget
+    public void onPacketSend(PacketEvent event) {
+        if (event.getType() != EventType.SEND || !this.isEnabled()) return;
+
+        Packet<?> packet = event.getPacket();
+
+        if (packet instanceof net.minecraft.network.play.client.C09PacketHeldItemChange) {
+            slot = true;
+        } else if (packet instanceof C0APacketAnimation) {
+            swing = true;
+        } else if (packet instanceof net.minecraft.network.play.client.C02PacketUseEntity &&
+                ((net.minecraft.network.play.client.C02PacketUseEntity)packet).getAction() == net.minecraft.network.play.client.C02PacketUseEntity.Action.ATTACK) {
+            attack = true;
+        } else if (packet instanceof net.minecraft.network.play.client.C08PacketPlayerBlockPlacement) {
+            block = true;
+        } else if (packet instanceof net.minecraft.network.play.client.C07PacketPlayerDigging) {
+            block = true;
+            dig = true;
+        } else if (packet instanceof net.minecraft.network.play.client.C0DPacketCloseWindow ||
+                packet instanceof net.minecraft.network.play.client.C16PacketClientStatus &&
+                        ((net.minecraft.network.play.client.C16PacketClientStatus)packet).getStatus() == net.minecraft.network.play.client.C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT ||
+                packet instanceof net.minecraft.network.play.client.C0EPacketClickWindow) {
+            inventory = true;
+        } else if (packet instanceof net.minecraft.network.play.client.C03PacketPlayer) {
+            resetBadPackets();
+        }
+    }
+
+    private boolean badPackets(boolean checkSlot, boolean checkAttack, boolean checkSwing,
+                               boolean checkBlock, boolean checkInventory, boolean checkDig) {
+        return (slot && checkSlot) ||
+                (attack && checkAttack) ||
+                (swing && checkSwing) ||
+                (block && checkBlock) ||
+                (inventory && checkInventory) ||
+                (dig && checkDig);
+    }
+
+    private void resetBadPackets() {
+        slot = false;
+        swing = false;
+        attack = false;
+        block = false;
+        inventory = false;
+        dig = false;
+    }
+
+    private boolean isAuraBlocking() {
+            Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
+            if (aura.isEnabled()) {
+                int autoBlockValue = aura.autoBlock.getValue();
+                return (autoBlockValue == 3 || autoBlockValue == 4 || autoBlockValue == 5) && aura.isPlayerBlocking();
+            }
+            return false;
     }
 
     private EntityPlayer getNearestPlayerTarget() {
@@ -167,7 +238,6 @@ public class Velocity extends Module {
     }
 
     private Entity getNearTarget() {
-        try {
             Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
             if (aura != null && aura.isEnabled()) {
                 Entity target = aura.getTarget();
@@ -175,9 +245,6 @@ public class Velocity extends Module {
                     return target;
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return getNearestPlayerTarget();
     }
 
@@ -197,23 +264,11 @@ public class Velocity extends Module {
         return RotationUtil.rayTrace(bb, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, 3.0) != null;
     }
 
-    private boolean watchdogIsTargetInRaycastRange(Entity target, double range) {
+    private boolean watchdogIsTargetInRaycastRange(Entity target) {
         if (target == null || mc.thePlayer == null) {
             return false;
         }
-        AxisAlignedBB bb = target.getEntityBoundingBox();
-        if (bb == null) return false;
-        return RotationUtil.rayTrace(bb, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, (float)range) != null;
-    }
-
-    private boolean isMoving() {
-        return mc.thePlayer != null && (Math.abs(mc.thePlayer.motionX) > 0.01 || Math.abs(mc.thePlayer.motionZ) > 0.01 ||
-                mc.thePlayer.movementInput.moveForward != 0 || mc.thePlayer.movementInput.moveStrafe != 0);
-    }
-
-    private boolean checks() {
-        if (mc.thePlayer == null) return false;
-        return isInWeb(mc.thePlayer) || mc.thePlayer.isInLava() || mc.thePlayer.isBurning() || mc.thePlayer.isInWater();
+        return RayCastUtil.inView(target);
     }
 
     private boolean isInBadPosition() {
@@ -243,16 +298,12 @@ public class Velocity extends Module {
         this.knockbackZ = 0.0;
     }
 
-    private void startDelayedVelocity(int ticks) {
-        this.delayedVelocityActive = true;
-        this.delayTicksLeft = Math.max(1, ticks);
-    }
-
     private void queueDelayedVelocity(PacketEvent event, S12PacketEntityVelocity packet, int ticks) {
         Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
         Epilogue.delayManager.delayedPacket.offer(packet);
         event.setCancelled(true);
-        this.startDelayedVelocity(ticks);
+        this.delayTicksLeft = Math.max(1, ticks);
+        this.delayedVelocityActive = true;
     }
 
     @EventTarget
@@ -332,46 +383,47 @@ public class Velocity extends Module {
         if (this.isWatchdog() && packet instanceof S12PacketEntityVelocity) {
             S12PacketEntityVelocity vel = (S12PacketEntityVelocity) packet;
             if (vel.getEntityID() == mc.thePlayer.getEntityId()) {
-                if (random.nextInt(100) > this.watchdogChance.getValue()) {
-                    return;
-                }
 
                 Entity target = this.getNearTarget();
+                double distance = target != null ? mc.thePlayer.getDistanceToEntity(target) : 100.0;
 
-                if (watchdogReceiving ||
-                        watchdogTicksSinceTeleport < 3 ||
+                if (receiving ||
+                        ticksSinceTeleport < 3 ||
                         isInWeb(mc.thePlayer) ||
                         mc.thePlayer.isSwingInProgress ||
                         isAuraBlocking() ||
-                        (target != null && mc.thePlayer.getDistanceToEntity(target) <= 3.2)) {
+                        (target != null && distance <= 3.2)) {
                     return;
                 }
 
-                watchdogPackets.add(vel);
-                watchdogActive = true;
-                event.setCancelled(true);
+                if (!mc.thePlayer.onGround) {
+                    delayedPackets.offer(vel);
+                    active = true;
+                    event.setCancelled(true);
 
-                watchdogTicksSinceVelocity = 0;
-
-                double verticalMotion = (double)vel.getMotionY() / 8000.0;
-                if (verticalMotion > 0) {
-                    watchdogShouldJump = true;
+                    ticksSinceVelocity = 0;
                 }
             }
         }
 
         if (this.isWatchdog() && packet instanceof S08PacketPlayerPosLook) {
             S08PacketPlayerPosLook posPacket = (S08PacketPlayerPosLook) packet;
-            if (watchdogActive) {
-                watchdogPackets.add(posPacket);
+            if (active) {
+                delayedPackets.offer(posPacket);
                 event.setCancelled(true);
             }
+        }
+
+        if (this.isWatchdog() && active && packet instanceof S32PacketConfirmTransaction) {
+            delayedPackets.offer(packet);
+            event.setCancelled(true);
+            return;
         }
 
         if (this.isWatchdog() && packet instanceof S19PacketEntityStatus) {
             S19PacketEntityStatus status = (S19PacketEntityStatus) packet;
             if (status.getEntity(mc.theWorld) == mc.thePlayer && status.getOpCode() == 2) {
-                watchdogTicksSinceVelocity = 0;
+                ticksSinceVelocity = 0;
             }
         }
 
@@ -386,16 +438,13 @@ public class Velocity extends Module {
                 }
 
                 boolean inBadPos = isInBadPosition();
-                boolean isBlocking = aura != null && aura.autoBlock.getValue() != 3 && aura.autoBlock.getValue() != 4 ?
-                        (aura.isPlayerBlocking() || aura.blockingState) :
-                        aura != null && aura.isBlocking();
+                boolean isBlocking = isAuraBlocking();
 
                 boolean reduceCondition = reduceTicksSinceTeleport >= 3 && !inBadPos && !isBlocking;
 
                 if (reduceCondition) {
                     reduceActive = true;
                     reduceVelocityTicks = 0;
-                    ChatUtil.sendRaw("Reduce Successfully");
                 }
             }
         }
@@ -412,7 +461,11 @@ public class Velocity extends Module {
             if (this.isReduce()) {
                 if (this.mixDelay.getValue()) {
                     if (!this.mixDelayOnlyInGround.getValue() || mc.thePlayer.onGround) {
-                        this.queueDelayedVelocity(event, vel, this.mixDelayTicks.getValue());
+                        Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
+                        Epilogue.delayManager.delayedPacket.offer(vel);
+                        event.setCancelled(true);
+                        this.delayTicksLeft = this.mixDelayTicks.getValue();
+                        this.delayedVelocityActive = true;
                         return;
                     }
                 }
@@ -423,7 +476,8 @@ public class Velocity extends Module {
                 Epilogue.delayManager.setDelayState(true, DelayModules.VELOCITY);
                 Epilogue.delayManager.delayedPacket.offer(vel);
                 event.setCancelled(true);
-                this.startDelayedVelocity(airDelayTicks.getValue());
+                this.airDelayTicksLeft = this.airDelayTicks.getValue();
+                this.delayedVelocityActive = true;
                 return;
             }
         }
@@ -451,90 +505,74 @@ public class Velocity extends Module {
     }
 
     @EventTarget
-    public void onUpdate(UpdateEvent event) {
+    public void onUpdate(UpdateEvent event) throws InterruptedException {
         if (!this.isEnabled() || mc.thePlayer == null) return;
 
+        ticksSinceTeleport++;
+        ticksSinceVelocity++;
+
+        if (!mc.thePlayer.onGround) {
+            offGroundTicks++;
+        } else {
+            offGroundTicks = 0;
+        }
+
         if (this.isWatchdog()) {
-            watchdogTicksSinceTeleport++;
-            watchdogTicksSinceVelocity++;
-
-            if (!mc.thePlayer.onGround) {
-                watchdogOffGroundTicks++;
-            } else {
-                watchdogOffGroundTicks = 0;
-            }
-
             Entity target = this.getNearTarget();
+            double distance = target != null ? mc.thePlayer.getDistanceToEntity(target) : 100.0;
 
-            if (this.watchdogIsTargetInRaycastRange(target, 3.0) &&
+            if (this.watchdogIsTargetInRaycastRange(target) &&
                     mc.thePlayer.isSwingInProgress &&
-                    watchdogTicksSinceVelocity < 3 &&
-                    !mc.thePlayer.onGround &&
-                    watchdogTicksSinceTeleport > 3) {
+                    ticksSinceVelocity < 3) {
 
                 Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
 
-                if (aura != null && aura.isEnabled()) {
+                if (aura != null && aura.isEnabled() &&
+                        !badPackets(true, true, true, false, true, false) &&
+                        ticksSinceTeleport > 3
+//                        && !aura.isPlayerBlocking()
+                ) {
 
-                    if (mc.getNetHandler() != null) {
-                        boolean canAttack;
-                        if (aura.autoBlock.getValue() == 3 || aura.autoBlock.getValue() == 4 || aura.autoBlock.getValue() == 5) {
-                            canAttack = !(mc.thePlayer.isUsingItem() || aura.blockingState) && ItemUtil.isHoldingSword();
-                        } else {
-                            canAttack = true;
-                        }
-                        if (canAttack){
-                            mc.getNetHandler().addToSendQueue(new net.minecraft.network.play.client.C0APacketAnimation());
-                        }
-                    }
+                    // 移除Attack并改为0.6 reduce
+                    mc.thePlayer.motionX *= 0.6;
+                    mc.thePlayer.motionZ *= 0.6;
+                    mc.thePlayer.setSprinting(false);
 
-                    if (mc.playerController != null) {
-                        mc.playerController.attackEntity(mc.thePlayer, target);
-                    }
-
+//                    if (mc.getNetHandler() != null) {
+//                        mc.getNetHandler().addToSendQueue(
+//                                new net.minecraft.network.play.client.C0APacketAnimation()
+//                        );
+//                    }
+//
+//                    if (mc.playerController != null) {
+//                        mc.playerController.attackEntity(mc.thePlayer, target);
+//                    }
                     String motionXStr = df.format(mc.thePlayer.motionX);
                     String motionZStr = df.format(mc.thePlayer.motionZ);
-                    ChatUtil.sendRaw("§bSB-Coffee §fMotion X: " + motionXStr + " | Motion Z: " + motionZStr);
+                    ChatUtil.sendRaw("§bBillionaire §fMotion X: " + motionXStr + " | Motion Z: " + motionZStr);
                 }
             }
 
-            if (watchdogActive && !watchdogReceiving && !watchdogPackets.isEmpty()) {
-                boolean shouldRelease = false;
-
-                if (mc.thePlayer.onGround) {
-                    shouldRelease = true;
-                }
-
-                if (watchdogTicksSinceTeleport < 3) {
-                    shouldRelease = true;
-                }
-
-                if (mc.thePlayer.isSwingInProgress) {
-                    shouldRelease = true;
-                }
-
-                if (target != null && mc.thePlayer.getDistanceToEntity(target) <= 3.2) {
-                    shouldRelease = true;
-                }
-
-                if (watchdogOffGroundTicks > 20) {
-                    shouldRelease = true;
-                }
-
-                if (shouldRelease) {
-                    watchdogReceiving = true;
-                    processWatchdogPackets();
-                    watchdogActive = false;
-                    watchdogReceiving = false;
+            if (mc.thePlayer.onGround && active) {
+                releaseDelayedPackets();
+            }
+            if (ticksSinceTeleport < 3 && active) {
+                releaseDelayedPackets();
+            }
+            if (mc.thePlayer.isSwingInProgress && active) {
+                releaseDelayedPackets();
+            }
+            if (target != null && distance <= 3.2 && active) {
+                if (this.watchdogIsTargetInRaycastRange(target)) {
+                    releaseDelayedPackets();
                 }
             }
+            if (offGroundTicks > 20 && active) {
+                releaseDelayedPackets();
+            }
 
-            if (this.watchdogLegitTiming.getValue() && watchdogActive) {
-                try {
-                    Thread.sleep(1 + random.nextInt(3));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            if (this.watchdogLegitTiming.getValue() && active) {
+                Thread.sleep(1 + random.nextInt(3));
             }
         }
 
@@ -583,7 +621,6 @@ public class Velocity extends Module {
                 if (canReduce) {
                     mc.thePlayer.swingItem();
                     mc.playerController.attackEntity(mc.thePlayer, target);
-                    ChatUtil.sendRaw("Attack");
                     mc.thePlayer.motionX *= 0.6;
                     mc.thePlayer.motionZ *= 0.6;
                     mc.thePlayer.setSprinting(false);
@@ -665,16 +702,16 @@ public class Velocity extends Module {
                 }
             }
         }
-
-        if (this.isWatchdog() && watchdogJump && mc.thePlayer.onGround) {
-            mc.thePlayer.movementInput.jump = true;
-            watchdogJump = false;
-        }
     }
 
     @EventTarget
     public void onLivingUpdate(LivingUpdateEvent event) {
-        if (this.jumpFlag) {
+        if (this.isWatchdog() && this.jump && this.watchdogJumpReset.getValue()) {
+            if (mc.thePlayer != null && mc.thePlayer.onGround) {
+                mc.thePlayer.movementInput.jump = true;
+            }
+            this.jump = false;
+        } else if (this.jumpFlag) {
             this.jumpFlag = false;
             if (mc.thePlayer != null && mc.thePlayer.onGround) {
                 mc.thePlayer.movementInput.jump = true;
@@ -703,14 +740,15 @@ public class Velocity extends Module {
         reduceTicksSinceTeleport = 0;
         reduceReceiving = false;
 
-        watchdogJump = false;
-        watchdogActive = false;
-        watchdogReceiving = false;
-        watchdogPackets.clear();
-        watchdogTicksSinceTeleport = 0;
-        watchdogTicksSinceVelocity = 0;
-        watchdogOffGroundTicks = 0;
-        watchdogShouldJump = false;
+        this.jump = false;
+        active = false;
+        receiving = false;
+        delayedPackets.clear();
+        ticksSinceTeleport = 0;
+        ticksSinceVelocity = 0;
+        offGroundTicks = 0;
+
+        resetBadPackets();
     }
 
     @Override
@@ -737,13 +775,14 @@ public class Velocity extends Module {
         reduceTicksSinceTeleport = 0;
         reduceReceiving = false;
 
-        if (!watchdogPackets.isEmpty()) {
-            processWatchdogPackets();
+        if (!delayedPackets.isEmpty()) {
+            releaseDelayedPackets();
         }
-        watchdogActive = false;
-        watchdogReceiving = false;
-        watchdogJump = false;
-        watchdogShouldJump = false;
+        active = false;
+        receiving = false;
+        this.jump = false;
+
+        resetBadPackets();
     }
 
     @Override
@@ -751,10 +790,11 @@ public class Velocity extends Module {
         String modeName = this.mode.getModeString();
         if (this.isWatchdog()) {
             String chanceStr = this.watchdogChance.getValue() + "%";
+            String jumpResetStr = this.watchdogJumpReset.getValue() ? "Jumpreset" : "NoJR";
             if (this.watchdogLegitTiming.getValue()) {
-                return new String[]{"Watchdog", chanceStr, "Legit"};
+                return new String[]{"Reduce", chanceStr, jumpResetStr, "Legit"};
             }
-            return new String[]{"Watchdog", chanceStr};
+            return new String[]{"Reduce", chanceStr, jumpResetStr};
         }
         return new String[]{CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, modeName)};
     }
