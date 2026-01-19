@@ -36,12 +36,16 @@ public class ArrayListWidget extends Widget {
         float anchorTopY = renderY;
         float anchorX = renderRight ? (renderX + width) : renderX;
 
+        if (arrayList.mode.getModeString().equals("HotKey")) {
+            anchorX = renderX;
+        }
+
         arrayList.renderAt(anchorX, anchorTopY);
 
         this.width = arrayList.getLastWidth();
         this.height = arrayList.getLastHeight();
 
-        if (renderRight) {
+        if (renderRight && !arrayList.mode.getModeString().equals("HotKey")) {
             this.renderX = anchorX - this.width;
         } else {
             this.renderX = anchorX;

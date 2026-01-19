@@ -26,12 +26,21 @@ import java.awt.Color;
 public class WaterMark extends Module {
     private final Minecraft mc = Minecraft.getMinecraft();
     public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Exhibition", "Epilogue"});
-    public final ModeValue mode1 = new ModeValue("Epilogue Mode", 1, new String[]{"Normal", "Image"});
+    public final ModeValue mode1 = new ModeValue("Epilogue Mode", 1, new String[]{"Normal", "Image"}, () -> this.mode.getValue() == 1);
+    public final ModeValue mode2 = new ModeValue("Image Mode", 1, new String[]{"Logo", "Text"}, () -> this.mode1.getValue() == 1);
     public final BooleanValue syncInterfaceColor = new BooleanValue("Sync Interface Color", true, () -> mode.getValue() == 1);
     public final FloatValue bgalpha = new FloatValue("Alpha", 0.4f, 0.0f, 1.0f, () -> mode.getValue() == 1 && mode1.getValue() == 0);
     public final FloatValue scale = new FloatValue("Scale", 1.0f, 0.5f, 5.0f, () -> mode.getValue() == 1 && mode1.getValue() == 1);
 
     private static final ResourceLocation EPILOGUE_LOGO = new ResourceLocation("minecraft", "epilogue/logo/EpilogueLogo.png");
+    private static final ResourceLocation EPILOGUE_LOGO_2 = new ResourceLocation("minecraft", "epilogue/mainmenu/EpilogueLogo.png");
+
+    private static void applyHighQualityTextureSampling() {
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+    }
 
     private float lastWidth = 0.0f;
     private float lastHeight = 0.0f;
@@ -226,93 +235,210 @@ public class WaterMark extends Module {
                     }
 
                     case 1:{
-                        float baseSize = 48.0f;
-                        float s = scale.getValue();
+                        switch (mode2.getValue()){
+                            case 0:{
+                                float baseSize = 48.0f;
+                                float s = scale.getValue();
 
-                        float a = 1.0f;
-                        float size = baseSize * s;
+                                float a = 1.0f;
+                                float size = baseSize * s;
 
-                        float x1 = x + size;
-                        float y1 = y + size;
+                                float x1 = x + size;
+                                float y1 = y + size;
 
-                        java.util.function.Consumer<Boolean> drawLogoColored = (bloomPass) -> {
-                            if (syncInterfaceColor.getValue() && interfaceModule != null) {
-                                float sweepSpeed = 0.03125f;
-                                int aaBase = (int) (a * 255.0f);
-                                int aa = bloomPass ? 255 : aaBase;
-                                float time = (mc.thePlayer != null ? (mc.thePlayer.ticksExisted + partialTicks) : (System.currentTimeMillis() * 0.001f));
+                                java.util.function.Consumer<Boolean> drawLogoColored = (bloomPass) -> {
+                                    if (syncInterfaceColor.getValue() && interfaceModule != null) {
+                                        float sweepSpeed = 0.03125f;
+                                        int aaBase = (int) (a * 255.0f);
+                                        int aa = bloomPass ? 255 : aaBase;
+                                        float time = (mc.thePlayer != null ? (mc.thePlayer.ticksExisted + partialTicks) : (System.currentTimeMillis() * 0.001f));
 
-                                int main = interfaceModule.getMainColor().getRGB();
-                                int second = interfaceModule.getSecondColor().getRGB();
-                                float cycles = 1.5f;
-                                float edge = 0.18f;
-                                float flow = time * (sweepSpeed * 0.125f);
+                                        int main = interfaceModule.getMainColor().getRGB();
+                                        int second = interfaceModule.getSecondColor().getRGB();
+                                        float cycles = 1.5f;
+                                        float edge = 0.18f;
+                                        float flow = time * (sweepSpeed * 0.125f);
 
-                                mc.getTextureManager().bindTexture(EPILOGUE_LOGO);
-                                GL11.glShadeModel(GL11.GL_SMOOTH);
-                                GlStateManager.enableTexture2D();
+                                        mc.getTextureManager().bindTexture(EPILOGUE_LOGO);
+                                        GL11.glShadeModel(GL11.GL_SMOOTH);
+                                        GlStateManager.enableTexture2D();
+                                        GlStateManager.enableBlend();
+                                        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                                        GlStateManager.enableAlpha();
+
+                                        GlStateManager.resetColor();
+                                        mc.getTextureManager().bindTexture(EPILOGUE_LOGO);
+                                        GlStateManager.enableTexture2D();
+
+                                        int strips = 48;
+                                        float stripH = size / strips;
+
+                                        ScaledResolution sr = new ScaledResolution(mc);
+                                        int factor = Math.max(1, sr.getScaleFactor());
+
+                                        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+                                        for (int i = 0; i < strips; i++) {
+                                            float yTop = y + i * stripH;
+                                            float yBot = yTop + stripH + 0.35f;
+
+                                            float vy = (yTop - y) / size;
+                                            float xCenter = ((float) Math.sin((time * sweepSpeed) * 0.35f + vy * 2.0f) * 0.5f + 0.5f);
+                                            float diag = (xCenter + vy) * 0.5f;
+                                            float p = diag * cycles - flow;
+                                            float f = p - (float) Math.floor(p);
+
+                                            float tri = 1.0f - Math.abs(f * 2.0f - 1.0f);
+                                            float t = Math.max(0.0f, Math.min(1.0f, (tri - (0.5f - edge)) / (2.0f * edge)));
+
+                                            int col = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, t), aa);
+
+                                            int sx = (int) (x * factor);
+                                            int sy = (int) (yTop * factor);
+                                            int sw = (int) (size * factor);
+                                            int sh = (int) ((yBot - yTop) * factor);
+                                            if (sw <= 0 || sh <= 0) continue;
+
+                                            GL11.glScissor(sx, mc.displayHeight - (sy + sh), sw, sh);
+
+                                            float shift = (float) Math.sin((diag) * (float) Math.PI * 2.0f + time * 0.6f * sweepSpeed * 2.0f) * 0.03f;
+                                            int c1 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter + shift))), aa);
+                                            int c2 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter - shift))), aa);
+
+                                            RenderUtil.drawImage(EPILOGUE_LOGO, x, y, x1, y1, c1, col, c2, col);
+                                        }
+                                        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+                                    } else {
+                                        int white = ColorUtil.swapAlpha(0xFFFFFFFF, (int) (a * 255.0f));
+                                        RenderUtil.drawImage(EPILOGUE_LOGO, x, y, x1, y1, white, white, white, white);
+                                    }
+                                };
+                                Framebuffer bloomBuffer = PostProcessing.beginBloom();
+                                if (bloomBuffer != null) {
+                                    drawLogoColored.accept(true);
+                                    PostProcessing.endBloom(bloomBuffer);
+                                }
                                 GlStateManager.enableBlend();
                                 GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
                                 GlStateManager.enableAlpha();
-
-                                GlStateManager.resetColor();
-                                mc.getTextureManager().bindTexture(EPILOGUE_LOGO);
-                                GlStateManager.enableTexture2D();
-
-                                int strips = 48;
-                                float stripH = size / strips;
-
-                                ScaledResolution sr = new ScaledResolution(mc);
-                                int factor = Math.max(1, sr.getScaleFactor());
-
-                                GL11.glEnable(GL11.GL_SCISSOR_TEST);
-                                for (int i = 0; i < strips; i++) {
-                                    float yTop = y + i * stripH;
-                                    float yBot = yTop + stripH + 0.35f;
-
-                                    float vy = (yTop - y) / size;
-                                    float xCenter = ((float) Math.sin((time * sweepSpeed) * 0.35f + vy * 2.0f) * 0.5f + 0.5f);
-                                    float diag = (xCenter + vy) * 0.5f;
-                                    float p = diag * cycles - flow;
-                                    float f = p - (float) Math.floor(p);
-
-                                    float tri = 1.0f - Math.abs(f * 2.0f - 1.0f);
-                                    float t = Math.max(0.0f, Math.min(1.0f, (tri - (0.5f - edge)) / (2.0f * edge)));
-
-                                    int col = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, t), aa);
-
-                                    int sx = (int) (x * factor);
-                                    int sy = (int) (yTop * factor);
-                                    int sw = (int) (size * factor);
-                                    int sh = (int) ((yBot - yTop) * factor);
-                                    if (sw <= 0 || sh <= 0) continue;
-
-                                    GL11.glScissor(sx, mc.displayHeight - (sy + sh), sw, sh);
-
-                                    float shift = (float) Math.sin((diag) * (float) Math.PI * 2.0f + time * 0.6f * sweepSpeed * 2.0f) * 0.03f;
-                                    int c1 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter + shift))), aa);
-                                    int c2 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter - shift))), aa);
-
-                                    RenderUtil.drawImage(EPILOGUE_LOGO, x, y, x1, y1, c1, col, c2, col);
-                                }
-                                GL11.glDisable(GL11.GL_SCISSOR_TEST);
-                            } else {
-                                int white = ColorUtil.swapAlpha(0xFFFFFFFF, (int) (a * 255.0f));
-                                RenderUtil.drawImage(EPILOGUE_LOGO, x, y, x1, y1, white, white, white, white);
+                                drawLogoColored.accept(false);
+                                GlStateManager.disableBlend();
+                                lastWidth = size;
+                                lastHeight = size;
+                                break;
                             }
-                        };
-                        Framebuffer bloomBuffer = PostProcessing.beginBloom();
-                        if (bloomBuffer != null) {
-                            drawLogoColored.accept(true);
-                            PostProcessing.endBloom(bloomBuffer);
+
+                            case 1:{
+                                float baseSize = 48.0f;
+                                float s = scale.getValue();
+
+                                float a = 1.0f;
+                                float size = baseSize * s;
+                                float logoAspect = 2730.0f / 1535.0f;
+                                float drawW = size;
+                                float drawH = size / logoAspect;
+
+                                float x1 = x + drawW;
+                                float y1 = y + drawH;
+
+                                java.util.function.Consumer<Boolean> drawLogoColored = (bloomPass) -> {
+                                    if (syncInterfaceColor.getValue() && interfaceModule != null) {
+
+                                        float sweepSpeed = 0.03125f;
+                                        int aaBase = (int) (a * 255.0f);
+                                        int aa = bloomPass ? 255 : aaBase;
+                                        float time = (mc.thePlayer != null ? (mc.thePlayer.ticksExisted + partialTicks) : (System.currentTimeMillis() * 0.001f));
+
+                                        int main = interfaceModule.getMainColor().getRGB();
+                                        int second = interfaceModule.getSecondColor().getRGB();
+                                        float cycles = 1.5f;
+                                        float edge = 0.18f;
+                                        float flow = time * (sweepSpeed * 0.125f);
+
+                                        mc.getTextureManager().bindTexture(EPILOGUE_LOGO_2);
+                                        applyHighQualityTextureSampling();
+
+                                        GL11.glShadeModel(GL11.GL_SMOOTH);
+                                        GlStateManager.enableTexture2D();
+                                        GlStateManager.enableBlend();
+                                        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                                        GlStateManager.enableAlpha();
+
+                                        GlStateManager.resetColor();
+                                        mc.getTextureManager().bindTexture(EPILOGUE_LOGO_2);
+                                        GlStateManager.enableTexture2D();
+
+                                        int strips = 48;
+                                        float stripH = size / strips;
+
+                                        ScaledResolution sr = new ScaledResolution(mc);
+                                        int factor = Math.max(1, sr.getScaleFactor());
+
+                                        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+                                        for (int i = 0; i < strips; i++) {
+                                            float yTop = y + i * stripH;
+                                            float yBot = yTop + stripH + 0.35f;
+
+                                            float vy = (yTop - y) / size;
+                                            float xCenter = ((float) Math.sin((time * sweepSpeed) * 0.35f + vy * 2.0f) * 0.5f + 0.5f);
+                                            float diag = (xCenter + vy) * 0.5f;
+                                            float p = diag * cycles - flow;
+                                            float f = p - (float) Math.floor(p);
+
+                                            float tri = 1.0f - Math.abs(f * 2.0f - 1.0f);
+                                            float t = Math.max(0.0f, Math.min(1.0f, (tri - (0.5f - edge)) / (2.0f * edge)));
+
+                                            int col = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, t), aa);
+
+                                            int sx = (int) (x * factor);
+                                            int sy = (int) (yTop * factor);
+                                            int sw = (int) (size * factor);
+                                            int sh = (int) ((yBot - yTop) * factor);
+                                            if (sw <= 0 || sh <= 0) continue;
+
+                                            GL11.glScissor(sx, mc.displayHeight - (sy + sh), sw, sh);
+
+                                            float shift = (float) Math.sin((diag) * (float) Math.PI * 2.0f + time * 0.6f * sweepSpeed * 2.0f) * 0.03f;
+                                            int c1 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter + shift))), aa);
+                                            int c2 = ColorUtil.swapAlpha(ColorUtil.fadeBetween(main, second, Math.max(0.0f, Math.min(1.0f, xCenter - shift))), aa);
+
+                                            if (!bloomPass) {
+                                                GL11.glBlendFunc(GL11.GL_ONE, GL11.GL_ONE);
+                                            } else {
+                                                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                                            }
+                                            RenderUtil.drawImage(EPILOGUE_LOGO_2, x, y, x1, y1, c1, col, c2, col);
+                                            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                                        }
+                                        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+                                    } else {
+                                        int aa = (int) (a * 255.0f);
+                                        int white = ColorUtil.swapAlpha(0xFFFFFFFF, aa);
+                                        GlStateManager.enableBlend();
+                                        if (!bloomPass) {
+                                            GL11.glBlendFunc(GL11.GL_ONE, GL11.GL_ONE);
+                                        } else {
+                                            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                                        }
+                                        mc.getTextureManager().bindTexture(EPILOGUE_LOGO_2);
+                                        applyHighQualityTextureSampling();
+                                        RenderUtil.drawImage(EPILOGUE_LOGO_2, x, y, x1, y1, white, white, white, white);
+                                        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                                        if (!bloomPass) {
+                                            int ghost = ColorUtil.swapAlpha(0xFFFFFFFF, (int) (aa * 0.55f));
+                                            RenderUtil.drawImage(EPILOGUE_LOGO_2, x, y, x1, y1, ghost, ghost, ghost, ghost);
+                                        }
+                                    }
+                                };
+                                GlStateManager.enableBlend();
+                                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                                GlStateManager.enableAlpha();
+                                drawLogoColored.accept(false);
+                                GlStateManager.disableBlend();
+                                lastWidth = drawW;
+                                lastHeight = drawH;
+                                break;
+                            }
                         }
-                        GlStateManager.enableBlend();
-                        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-                        GlStateManager.enableAlpha();
-                        drawLogoColored.accept(false);
-                        GlStateManager.disableBlend();
-                        lastWidth = size;
-                        lastHeight = size;
                         break;
                     }
                 }

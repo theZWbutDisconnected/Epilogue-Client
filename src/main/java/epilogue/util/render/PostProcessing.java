@@ -15,6 +15,7 @@ public class PostProcessing {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
     private static boolean internalBloomSuppressed;
+    private static boolean internalForcedPostProcessing;
 
     public static boolean isInternalBloomSuppressed() {
         return internalBloomSuppressed;
@@ -22,6 +23,14 @@ public class PostProcessing {
 
     public static void setInternalBloomSuppressed(boolean suppressed) {
         internalBloomSuppressed = suppressed;
+    }
+
+    public static boolean isInternalForcedPostProcessing() {
+        return internalForcedPostProcessing;
+    }
+
+    public static void setInternalForcedPostProcessing(boolean forced) {
+        internalForcedPostProcessing = forced;
     }
 
     public static void drawBlur(float x, float y, float x2, float y2, Supplier<Runnable> maskDrawer) {
@@ -100,7 +109,7 @@ public class PostProcessing {
     }
 
     public static Framebuffer beginBloom() {
-        if (internalBloomSuppressed) return null;
+        if (internalBloomSuppressed && !internalForcedPostProcessing) return null;
         if (!epilogue.module.modules.render.PostProcessing.isBloomEnabled()) {
             return null;
         }

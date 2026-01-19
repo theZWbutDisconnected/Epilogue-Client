@@ -13,7 +13,7 @@ import java.util.Map;
 public class FontTransformer {
     private static FontTransformer instance;
     private final Map<String, Font> fontCache = new HashMap<>();
-    private String selectedFontName = "Arial";
+    private String selectedFontName = "Inter_SemiBold";
     private float selectedFontSize = 18.0f;
 
     private FontTransformer() {

@@ -178,6 +178,6 @@ public class InvWalk extends Module {
 
     @Override
     public String[] getSuffix() {
-        return new String[]{CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, this.mode.getModeString())};
+        return new String[]{this.mode.getModeString()};
     }
 }
