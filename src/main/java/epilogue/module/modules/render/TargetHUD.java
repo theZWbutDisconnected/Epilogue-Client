@@ -7,14 +7,21 @@ import epilogue.events.PacketEvent;
 import epilogue.events.Render2DEvent;
 import epilogue.module.Module;
 import epilogue.module.modules.combat.Aura;
+import epilogue.ncm.rendering.rendersystem.RenderSystem;
 import epilogue.ui.chat.GuiChat;
 import epilogue.util.RenderUtil;
 import epilogue.util.TeamUtil;
 import epilogue.util.TimerUtil;
+import epilogue.util.render.PostProcessing;
+import epilogue.util.render.RoundedUtil;
+import epilogue.ui.clickgui.menu.Fonts;
 import epilogue.value.values.BooleanValue;
+import epilogue.value.values.IntValue;
 import epilogue.value.values.ModeValue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.Gui;
+
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
@@ -30,6 +37,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C02PacketUseEntity.Action;
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -43,17 +51,19 @@ public class TargetHUD extends Module {
     private final TimerUtil animTimer = new TimerUtil();
     private EntityLivingBase lastTarget = null;
     private EntityLivingBase target = null;
-
     private int lastTargetEntityId = -1;
 
-    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Exhibition"});
-    public final BooleanValue shadow = new BooleanValue("Text Shadow", true, () -> this.mode.getValue() == 1);
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Exhibition", "Epilogue"});
+    public final IntValue bgAlpha = new IntValue("BackGround Alpha", 45, 0, 255, () -> this.mode.getValue() == 1);
+    public final BooleanValue shadow = new BooleanValue("Text Shadow", true, () -> this.mode.getValue() == 0);
     public final BooleanValue kaOnly = new BooleanValue("Only KillAura", true);
     private static final float SCALE = 1.0F;
     private float anchorX = 0.0f;
     private float anchorY = 0.0f;
     private float lastWidth = 0.0f;
     private float lastHeight = 0.0f;
+    private float epilogueDisplayHealth = -1.0f;
+    private final float epilogueTextScale = 0.75f;;
 
     public void renderAt(float x, float y) {
         this.anchorX = x;
@@ -118,6 +128,9 @@ public class TargetHUD extends Module {
         switch (this.mode.getValue()) {
             case 0:
                 renderExhibitionMode();
+                break;
+            case 1:
+                renderEpilogueMode();
                 break;
         }
     }
@@ -263,6 +276,224 @@ public class TargetHUD extends Module {
         }
 
         GlStateManager.popMatrix();
+    }
+
+    private void renderEpilogueMode() {
+        if (!(this.target instanceof EntityPlayer)) return;
+
+        EntityPlayer p = (EntityPlayer) this.target;
+
+        float hurtAnim = 0.0f;
+        if (p.hurtTime > 0) {
+            hurtAnim = Math.min(1.0f, p.hurtTime / 10.0f);
+        }
+        float pop = 1.0f + (0.06f * hurtAnim);
+
+        float[] pos = computePos();
+        float x = pos[0];
+        float y = pos[1];
+
+        float pad = 6.0f;
+        float headSize = 26.0f;
+        float radius = 5.0f;
+
+        float hpBarW = 4.0f;
+        float hpBarPad = 4.0f;
+
+        float leftW = headSize;
+        float rightPad = 8.0f;
+        float baseW = 160.0f;
+        float baseH = 40.0f;
+
+        float nameW = Fonts.width(Fonts.small(), p.getName());
+        float cardW = Math.max(baseW, 110.0f + nameW);
+        float cardH = baseH;
+
+        setLastSize(cardW, cardH);
+
+        float cardX = x;
+        float cardY = y;
+
+        float innerX = cardX + pad;
+        float innerY = cardY + pad;
+
+        float barX = innerX;
+        float headX = innerX + hpBarW + hpBarPad;
+        float headY = innerY + (cardH - pad * 2.0f - headSize) / 2.0f;
+
+        float contentX = headX + leftW + 10.0f;
+        float contentW = cardW - (contentX - cardX) - rightPad;
+
+        int bg = new Color(18, 18, 18, bgAlpha.getValue()).getRGB();
+        int bgInner = new Color(22, 22, 22, bgAlpha.getValue() + 20).getRGB();
+
+        float blurX1 = cardX;
+        PostProcessing.drawBlur(blurX1, cardY, cardX + cardW, cardY + cardH, () -> () -> {
+            RoundedUtil.drawRound(cardX, cardY, cardW, cardH, radius, new Color(-1, true));
+        });
+
+        net.minecraft.client.shader.Framebuffer bloom = PostProcessing.beginBloom();
+        if (bloom != null) {
+            int bloomColor = epilogue.module.modules.render.PostProcessing.getBloomColor(0);
+            RoundedUtil.drawRound(cardX, cardY, cardW, cardH, radius, new Color(bloomColor, true));
+            PostProcessing.endBloom(bloom);
+        }
+
+        RoundedUtil.drawRound(cardX, cardY, cardW, cardH, radius, new Color(bg, true));
+        RoundedUtil.drawRound(cardX + 1.0f, cardY + 1.0f, cardW - 2.0f, cardH - 2.0f, radius - 1.0f, new Color(bgInner, true));
+
+        float textY = headY + 3.0f;
+        int label = new Color(160, 160, 160, 255).getRGB();
+        int value = new Color(235, 235, 235, 255).getRGB();
+
+        float col1X = contentX;
+        float col2X = contentX + contentW * 0.55f;
+        float colW = (col2X - col1X) - 4.0f;
+
+        drawKeyValueClamped("Name", p.getName(), col1X, textY, colW, label, value);
+        drawKeyValueClamped("Block State", p.isBlocking() ? "true" : "false", col2X, textY, colW, label, value);
+
+        float rawHp = p.getHealth();
+        float max = p.getMaxHealth() + p.getAbsorptionAmount();
+        if (epilogueDisplayHealth < 0.0f) epilogueDisplayHealth = rawHp;
+        epilogueDisplayHealth += (rawHp - epilogueDisplayHealth) * 0.12f;
+        float frac = max <= 0.0f ? 0.0f : Math.max(0.0f, Math.min(1.0f, epilogueDisplayHealth / max));
+
+        float barY = headY;
+        float barH = headSize;
+        RoundedUtil.drawRound(barX, barY, hpBarW, barH, 2.0f, new Color(0, 0, 0, 110));
+        float fillH = barH * frac;
+        float fillY = barY + (barH - fillH);
+        RoundedUtil.drawRound(barX, fillY, hpBarW, fillH, 2.0f, new Color(220, 60, 60, 255));
+
+        float line2Y = textY + 10.0f;
+        int dist = mc.thePlayer != null ? (int) mc.thePlayer.getDistanceToEntity(p) : 0;
+        drawKeyValueClamped("HP", String.valueOf((int) rawHp), col1X, line2Y, colW, label, value);
+        drawKeyValueClamped("Distance", dist + "m", col2X, line2Y, colW, label, value);
+
+        renderItemIconsOnly(p, contentX, headY + headSize - 4.0f, contentW, 0.68f);
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(headX + headSize / 2.0f, headY + headSize / 2.0f, 0);
+        GlStateManager.scale(pop, pop, 1.0f);
+        GlStateManager.translate(-(headX + headSize / 2.0f), -(headY + headSize / 2.0f), 0);
+        drawRoundedHead(p, headX, headY, headSize, 5.5f);
+        GlStateManager.popMatrix();
+    }
+
+    private void drawSmallText(String s, float x, float y, int color) {
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x, y, 0.0f);
+        GlStateManager.scale(epilogueTextScale, epilogueTextScale, 1.0f);
+        if (this.shadow.getValue()) {
+            Fonts.drawWithShadow(Fonts.small(), s, 0.0f, 0.0f, color);
+        } else {
+            Fonts.draw(Fonts.small(), s, 0.0f, 0.0f, color);
+        }
+        GlStateManager.popMatrix();
+    }
+
+    private void drawKeyValueClamped(String key, String val, float x, float y, float maxWidth, int keyColor, int valColor) {
+        String k = key + " ";
+        float kw = getSmallTextWidth(k);
+        float vw = Math.max(0.0f, maxWidth - kw);
+        drawSmallText(k, x, y, keyColor);
+        drawSmallText(ellipsizeSmall(val, vw), x + kw, y, valColor);
+    }
+
+    private float getSmallTextWidth(String s) {
+        return Fonts.width(Fonts.small(), s) * epilogueTextScale;
+    }
+
+    private String ellipsizeSmall(String s, float maxW) {
+        if (s == null) return "";
+        if (maxW <= 0.0f) return "";
+        if (getSmallTextWidth(s) <= maxW) return s;
+        final String dots = "...";
+        float dw = getSmallTextWidth(dots);
+        if (dw >= maxW) return "";
+        int end = s.length();
+        while (end > 0 && getSmallTextWidth(s.substring(0, end)) + dw > maxW) {
+            end--;
+        }
+        return end <= 0 ? "" : s.substring(0, end) + dots;
+    }
+
+    private void drawRoundedHead(EntityPlayer p, float x, float y, float size, float radius) {
+        ResourceLocation skin = mc.getNetHandler().getPlayerInfo(p.getName()) != null
+                ? mc.getNetHandler().getPlayerInfo(p.getName()).getLocationSkin()
+                : null;
+        if (skin == null) return;
+        mc.getTextureManager().bindTexture(skin);
+        RenderSystem.nearestFilter();
+
+        float clipX = x;
+        float clipY = y;
+        float clipS = size;
+        RoundedUtil.beginRoundClip(clipX, clipY, clipS, clipS, radius);
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x, y, 0.0f);
+        Gui.drawScaledCustomSizeModalRect(0, 0, 8.0F, 8.0F, 8, 8, (int) size, (int) size, 64.0F, 64.0F);
+        Gui.drawScaledCustomSizeModalRect(0, 0, 40.0F, 8.0F, 8, 8, (int) size, (int) size, 64.0F, 64.0F);
+        GlStateManager.popMatrix();
+        RoundedUtil.endRoundClip();
+    }
+
+    private void renderItemIconsOnly(EntityPlayer p, float startX, float y, float width, float scale) {
+        final List<ItemStack> items = new ArrayList<>();
+
+        for (int index = 3; index >= 0; --index) {
+            final ItemStack armor = p.inventory.armorInventory[index];
+            if (armor != null) {
+                items.add(armor);
+            }
+        }
+        if (p.getCurrentEquippedItem() != null) {
+            items.add(p.getCurrentEquippedItem());
+        }
+
+        int count = items.size();
+        if (count <= 0) return;
+
+        float icon = 16.0f * scale;
+
+        float gap;
+        if (count <= 1) {
+            gap = 0.0f;
+        } else {
+            gap = (width - (count * icon)) / (count - 1);
+            gap = Math.max(2.0f, gap);
+        }
+
+        float total = (count * icon) + (count - 1) * gap;
+        float x0 = startX + (width - total) / 2.0f;
+
+        RenderHelper.enableGUIStandardItemLighting();
+
+        float x = x0;
+        for (final ItemStack stack : items) {
+            if (stack == null) continue;
+
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(x, y, 0.0f);
+            GlStateManager.scale(scale, scale, 1.0f);
+            GlStateManager.translate(-x, -y, 0.0f);
+
+            GlStateManager.disableAlpha();
+            GlStateManager.clear(256);
+            mc.getRenderItem().zLevel = -150.0f;
+            mc.getRenderItem().renderItemAndEffectIntoGUI(stack, (int) x, (int) y);
+            mc.getRenderItem().zLevel = 0.0f;
+            GlStateManager.enableAlpha();
+
+            GlStateManager.popMatrix();
+
+            x += icon + gap;
+        }
+
+        RenderHelper.disableStandardItemLighting();
+        RenderHelper.disableStandardItemLighting();
     }
 
     private double getIncremental(double value, double increment) {

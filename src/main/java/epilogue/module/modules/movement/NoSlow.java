@@ -1,8 +1,6 @@
 package epilogue.module.modules.movement;
 
 import epilogue.Epilogue;
-import epilogue.enums.FloatModules;
-import epilogue.enums.BlinkModules;
 import epilogue.event.EventTarget;
 import epilogue.events.LivingUpdateEvent;
 import epilogue.events.PlayerUpdateEvent;
@@ -12,90 +10,51 @@ import epilogue.module.modules.combat.Aura;
 import epilogue.value.values.BooleanValue;
 import epilogue.value.values.IntValue;
 import epilogue.value.values.ModeValue;
-import epilogue.value.values.PercentValue;
 import epilogue.util.BlockUtil;
 import epilogue.util.ItemUtil;
 import epilogue.util.PlayerUtil;
 import epilogue.util.TeamUtil;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemSword;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class NoSlow extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
-    private int lastSlot = -1;
-    private boolean noslowSuccess = false;
-    private long lastCheckTime = 0L;
-    private boolean wasBlocking = false;
     private long lastBlockingTime = 0L;
-    private boolean isBlinking = false;
-    private int blinkTimer = 0;
-    private int onGroundTicks = 0;
-    private boolean isPredictionBlinkActive = false;
-    private boolean usingItem = false;
-    private boolean hasDroppedFood = false;
-    private final Queue<Packet<?>> packetQueue = new LinkedBlockingQueue();
 
-    public final ModeValue swordMode = new ModeValue("Sword Mode", 4, new String[]{"None", "Vanilla", "Blink", "Prediction"});
+    private boolean wasUsingItem = false;
+    private int predictionBlinkTimer = 0;
+    private boolean isPredictionBlinking = false;
+
+    public final ModeValue swordMode = new ModeValue("Sword Mode", 2, new String[]{"None", "Vanilla", "Prediction"});
     public final BooleanValue onlyKillAuraAutoBlock = new BooleanValue("Only KillAura AutoBlock", false, () -> this.swordMode.getValue() != 0);
-    public final PercentValue swordMotion = new PercentValue("Sword Motion", 100, () -> this.swordMode.getValue() != 0);
+    public final IntValue swordBlinkDelay = new IntValue("Delay", 1, 1, 10, () -> this.swordMode.getValue() == 2);
+    public final IntValue swordBlinkDuration = new IntValue("Duration", 1, 1, 5, () -> this.swordMode.getValue() == 2);
     public final BooleanValue swordSprint = new BooleanValue("Sword Sprint", true, () -> this.swordMode.getValue() != 0);
-    public final IntValue swordBlinkDelay = new IntValue("Sword Blink Delay", 1, 1, 10, () -> this.swordMode.getValue() == 2);
-    public final IntValue swordBlinkDuration = new IntValue("Sword Blink Duration", 2, 1, 5, () -> this.swordMode.getValue() == 2);
-    public final IntValue predictionBlinkDelay = new IntValue("Prediction Delay", 2, 1, 10, () -> this.swordMode.getValue() == 3);
-    public final IntValue predictionBlinkDuration = new IntValue("Prediction Duration", 1, 1, 5, () -> this.swordMode.getValue() == 3);
-
-    public final ModeValue foodMode = new ModeValue("Food Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink"});
-    public final PercentValue foodMotion = new PercentValue("Food Motion", 100, () -> this.foodMode.getValue() != 0);
+    public final ModeValue foodMode = new ModeValue("Food Mode", 0, new String[]{"None", "Vanilla"});
     public final BooleanValue foodSprint = new BooleanValue("Food Sprint", true, () -> this.foodMode.getValue() != 0);
-    public final IntValue foodBlinkDelay = new IntValue("Food Blink Delay", 2, 1, 10, () -> this.foodMode.getValue() == 3);
-    public final IntValue foodBlinkDuration = new IntValue("Food Blink Duration", 1, 1, 5, () -> this.foodMode.getValue() == 3);
-
-    public final ModeValue bowMode = new ModeValue("Bow Mode", 0, new String[]{"None", "Vanilla", "Float", "Blink"});
-    public final PercentValue bowMotion = new PercentValue("Bow Motion", 100, () -> this.bowMode.getValue() != 0);
+    public final ModeValue bowMode = new ModeValue("Bow Mode", 0, new String[]{"None", "Vanilla"});
     public final BooleanValue bowSprint = new BooleanValue("Bow Sprint", true, () -> this.bowMode.getValue() != 0);
-    public final IntValue bowBlinkDelay = new IntValue("Bow Blink Delay", 2, 1, 10, () -> this.bowMode.getValue() == 3);
-    public final IntValue bowBlinkDuration = new IntValue("Bow Blink Duration", 1, 1, 5, () -> this.bowMode.getValue() == 3);
-
-    public final BooleanValue successDetection = new BooleanValue("Success Detection", true, () -> this.swordMode.getValue() == 1 || this.swordMode.getValue() == 2 || this.swordMode.getValue() == 3);
-    public final BooleanValue successMessage = new BooleanValue("Success Message", true, () -> this.successDetection.getValue());
 
     public NoSlow() {
         super("NoSlow", false);
     }
 
     public boolean isSwordActive() {
-        return this.swordMode.getValue() != 0
-                && ItemUtil.isHoldingSword()
-                && (!this.onlyKillAuraAutoBlock.getValue() || this.isKillAuraAutoBlocking());
+        return this.swordMode.getValue() != 0 && ItemUtil.isHoldingSword() && (!this.onlyKillAuraAutoBlock.getValue() || this.isKillAuraAutoBlocking());
     }
 
     public boolean isPredictionMode() {
-        return this.swordMode.getValue() == 3 && this.isSwordActive();
+        return this.swordMode.getValue() == 2 && this.isSwordActive();
     }
 
     private boolean isKillAuraAutoBlocking() {
         Aura aura = (Aura) Epilogue.moduleManager.modules.get(Aura.class);
-        if (aura == null || !aura.isEnabled()) {
-            return false;
-        }
-        if (!ItemUtil.isHoldingSword()) {
-            return false;
-        }
-        int mode = aura.autoBlock.getValue();
-        if (mode == 0 || mode == 8) {
-            return false;
-        }
-        if (!(aura.isBlocking() || aura.isPlayerBlocking())) {
+        if (aura.autoBlock.getValue() == 0 || aura.autoBlock.getValue() == 2 || !aura.isPlayerBlocking() || !aura.isEnabled()) {
             return false;
         }
         return aura.shouldAutoBlock();
@@ -109,16 +68,6 @@ public class NoSlow extends Module {
         return this.bowMode.getValue() != 0 && ItemUtil.isUsingBow();
     }
 
-    public boolean isFloatMode() {
-        return this.foodMode.getValue() == 2 && ItemUtil.isEating() || this.bowMode.getValue() == 2 && ItemUtil.isUsingBow();
-    }
-
-    public boolean isBlinkMode() {
-        return this.swordMode.getValue() == 2 && ItemUtil.isHoldingSword()
-                || this.foodMode.getValue() == 3 && ItemUtil.isEating()
-                || this.bowMode.getValue() == 3 && ItemUtil.isUsingBow();
-    }
-
     public boolean isAnyActive() {
         return NoSlow.mc.thePlayer.isUsingItem() && (this.isSwordActive() || this.isFoodActive() || this.isBowActive());
     }
@@ -129,116 +78,51 @@ public class NoSlow extends Module {
                 || this.isBowActive() && this.bowSprint.getValue() != false;
     }
 
-    public int getMotionMultiplier() {
-        if (ItemUtil.isHoldingSword()) {
-            return this.swordMotion.getValue();
-        }
-        if (ItemUtil.isEating()) {
-            return this.foodMotion.getValue();
-        }
-        return ItemUtil.isUsingBow() ? this.bowMotion.getValue() : 100;
-    }
-
-    private void flushPacketQueue() {
-        while (!this.packetQueue.isEmpty()) {
-            Packet<?> packet = this.packetQueue.poll();
-            if (packet == null || mc.getNetHandler() == null) continue;
-            mc.getNetHandler().addToSendQueue(packet);
+    private void sendC09() {
+        if (mc.thePlayer != null && mc.getNetHandler() != null) {
+            int current = mc.thePlayer.inventory.currentItem;
+            int next = (current + 1) % 9;
+            mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(next));
+            mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(current));
         }
     }
 
-    private boolean shouldBlink() {
-        if (!this.isBlinkMode()) {
-            return false;
+    private void handlePredictionMode() {
+        if (mc.thePlayer == null) return;
+        boolean isUsingNow = PlayerUtil.isUsingItem();
+        if (isUsingNow && !this.wasUsingItem) {
+            this.sendC09();
+            this.predictionBlinkTimer = 0;
+            this.isPredictionBlinking = true;
         }
-        ++this.blinkTimer;
-        int delay = 2;
-        int duration = 1;
-        if (ItemUtil.isHoldingSword()) {
-            delay = this.swordBlinkDelay.getValue();
-            duration = this.swordBlinkDuration.getValue();
-        } else if (ItemUtil.isEating()) {
-            delay = this.foodBlinkDelay.getValue();
-            duration = this.foodBlinkDuration.getValue();
-        } else if (ItemUtil.isUsingBow()) {
-            delay = this.bowBlinkDelay.getValue();
-            duration = this.bowBlinkDuration.getValue();
-        }
-        int totalCycle = delay + duration;
-        int currentPhase = this.blinkTimer % totalCycle;
-        if (currentPhase < delay) {
-            this.isBlinking = false;
-            return false;
-        }
-        this.isBlinking = true;
-        return true;
-    }
+        this.wasUsingItem = isUsingNow;
+        if (this.isPredictionBlinking) {
+            ++this.predictionBlinkTimer;
+            int delay = this.swordBlinkDelay.getValue();
+            int duration = this.swordBlinkDuration.getValue();
+            int total = delay + duration;
+            int phase = this.predictionBlinkTimer % total;
+            if (phase >= delay) {
+                mc.thePlayer.stopUsingItem();
 
-    private boolean checkNoSlowSuccess() {
-        boolean newSuccessState;
-        if (!(this.isEnabled() && this.isSwordActive() && this.successDetection.getValue())) {
-            return false;
-        }
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - this.lastCheckTime < 500L) {
-            return this.noslowSuccess;
-        }
-        this.lastCheckTime = currentTime;
-        boolean wasSprinting = NoSlow.mc.thePlayer.isSprinting();
-        boolean isMoving = Math.abs(NoSlow.mc.thePlayer.movementInput.moveForward) > 0.1f || Math.abs(NoSlow.mc.thePlayer.movementInput.moveStrafe) > 0.1f;
-        boolean bl = newSuccessState = wasSprinting && isMoving && PlayerUtil.isUsingItem();
-        if (newSuccessState != this.noslowSuccess && this.successMessage.getValue()) {
-            if (newSuccessState) {
-                NoSlow.mc.thePlayer.addChatMessage(new ChatComponentText("§a[NoSlow] §fSuccess - Sword blocking without slowdown!"));
-            } else {
-                NoSlow.mc.thePlayer.addChatMessage(new ChatComponentText("§c[NoSlow] §fFailed - Normal sword blocking slowdown"));
+                this.isPredictionBlinking = false;
             }
         }
-        this.noslowSuccess = newSuccessState;
-        return this.noslowSuccess;
-    }
-
-    private void sendBzymC09() {
-        if (NoSlow.mc.thePlayer == null || mc.getNetHandler() == null) {
-            return;
-        }
-        int current = NoSlow.mc.thePlayer.inventory.currentItem;
-        int next = (current + 1) % 9;
-        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(next));
-        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(current));
     }
 
     @EventTarget
     public void onLivingUpdate(LivingUpdateEvent event) {
         if (!this.isEnabled()) {
-            this.wasBlocking = false;
-            this.onGroundTicks = 0;
-            this.usingItem = false;
-            this.isPredictionBlinkActive = false;
             return;
-        }
-
-        if (mc.thePlayer != null) {
-            if (mc.thePlayer.onGround) {
-                this.onGroundTicks++;
-            } else {
-                this.onGroundTicks = 0;
-            }
         }
 
         boolean isCurrentlyBlocking = this.isSwordActive() && PlayerUtil.isUsingItem();
 
-        if (this.isBlinkMode() && this.shouldBlink()) {
-            if (this.isSwordActive()) {
-                NoSlow.mc.thePlayer.stopUsingItem();
-            }
-            isCurrentlyBlocking = false;
-            this.wasBlocking = false;
-            return;
+        if (this.isPredictionMode()) {
+            this.handlePredictionMode();
         }
 
         if (isCurrentlyBlocking) {
-            this.wasBlocking = true;
             this.lastBlockingTime = System.currentTimeMillis();
         }
 
@@ -246,65 +130,13 @@ public class NoSlow extends Module {
         boolean playerWantsToSprint = NoSlow.mc.gameSettings.keyBindSprint.isKeyDown();
 
         if (this.isAnyActive() || inSprintProtection) {
-            if (this.isSwordActive() || inSprintProtection) {
-                this.checkNoSlowSuccess();
-            }
-            if ((this.canSprint() || inSprintProtection) && playerWantsToSprint && NoSlow.mc.thePlayer.movementInput.moveForward > 0.1f) {
-                NoSlow.mc.thePlayer.setSprinting(true);
-            } else {
-                NoSlow.mc.thePlayer.setSprinting(false);
-            }
-        } else {
-            this.wasBlocking = false;
+            NoSlow.mc.thePlayer.setSprinting((this.canSprint() || inSprintProtection) && playerWantsToSprint && NoSlow.mc.thePlayer.movementInput.moveForward > 0.1f);
         }
     }
 
     @EventTarget(value=3)
     public void onPlayerUpdate(PlayerUpdateEvent event) {
-        if (!this.isEnabled() || mc.thePlayer == null) {
-            if (this.isPredictionBlinkActive) {
-                Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_SLOW);
-                this.isPredictionBlinkActive = false;
-            }
-            this.usingItem = false;
-            this.flushPacketQueue();
-            return;
-        }
-
-        if (this.isPredictionMode()) {
-            boolean isBlocking = PlayerUtil.isUsingItem() && this.isSwordActive();
-
-            if (isBlocking) {
-                if (!this.isPredictionBlinkActive) {
-                    Epilogue.blinkManager.setBlinkState(true, BlinkModules.NO_SLOW);
-                    this.isPredictionBlinkActive = true;
-                }
-                sendBzymC09();
-                if (mc.thePlayer.movementInput.moveForward > 0.1f && mc.gameSettings.keyBindSprint.isKeyDown()) {
-                    mc.thePlayer.setSprinting(true);
-                }
-            } else {
-                if (this.isPredictionBlinkActive) {
-                    Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_SLOW);
-                    this.isPredictionBlinkActive = false;
-                }
-            }
-        }
-
-        if (this.isFloatMode()) {
-            int item = NoSlow.mc.thePlayer.inventory.currentItem;
-            if (this.lastSlot != item && PlayerUtil.isUsingItem()) {
-                this.lastSlot = item;
-                Epilogue.floatManager.setFloatState(true, FloatModules.NO_SLOW);
-            }
-        } else {
-            this.lastSlot = -1;
-            Epilogue.floatManager.setFloatState(false, FloatModules.NO_SLOW);
-        }
-
-        if (this.isSwordActive() && this.successDetection.getValue()) {
-            this.checkNoSlowSuccess();
-        }
+        if (!this.isEnabled() || mc.thePlayer == null) return;
     }
 
     @EventTarget
@@ -327,40 +159,28 @@ public class NoSlow extends Module {
                     }
                 }
             }
-            if (this.isFloatMode() && !Epilogue.floatManager.isPredicted() && NoSlow.mc.thePlayer.onGround) {
-                event.setCancelled(true);
-                NoSlow.mc.thePlayer.motionY = 0.42f;
-            }
         }
     }
 
     @Override
     public void onEnabled() {
-        this.blinkTimer = 0;
-        this.isBlinking = false;
-        this.noslowSuccess = false;
-        this.lastCheckTime = 0L;
-        this.wasBlocking = false;
         this.lastBlockingTime = 0L;
-        this.isPredictionBlinkActive = false;
-        this.packetQueue.clear();
-        this.usingItem = false;
-        this.hasDroppedFood = false;
+
+        this.wasUsingItem = false;
+        this.predictionBlinkTimer = 0;
+        this.isPredictionBlinking = false;
     }
 
     @Override
     public void onDisabled() {
-        this.blinkTimer = 0;
-        this.isBlinking = false;
-        this.noslowSuccess = false;
-        this.lastCheckTime = 0L;
-        this.wasBlocking = false;
         this.lastBlockingTime = 0L;
-        if (this.isPredictionBlinkActive) {
-            Epilogue.blinkManager.setBlinkState(false, BlinkModules.NO_SLOW);
-            this.isPredictionBlinkActive = false;
+
+        this.wasUsingItem = false;
+        this.predictionBlinkTimer = 0;
+        this.isPredictionBlinking = false;
+
+        if (mc.thePlayer != null) {
+            mc.thePlayer.stopUsingItem();
         }
-        this.flushPacketQueue();
-        this.usingItem = false;
     }
 }

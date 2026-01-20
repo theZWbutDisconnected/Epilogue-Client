@@ -12,7 +12,6 @@ import epilogue.module.Module;
 import epilogue.module.modules.combat.rotation.OPRotationSystem;
 import epilogue.module.modules.combat.rotation.Rotation;
 import epilogue.module.modules.combat.rotation.RotationUtils;
-import epilogue.module.modules.movement.NoSlow;
 import epilogue.module.modules.player.Scaffold;
 import epilogue.module.modules.player.BedNuker;
 import epilogue.value.values.BooleanValue;
@@ -63,7 +62,7 @@ public class Aura extends Module {
     private int switchTick = 0;
     private boolean hitRegistered = false;
     boolean blockingState = false;
-    private boolean isBlocking = false;
+    public static boolean isBlocking = false;
     private boolean fakeBlockState = false;
     private boolean blinkReset = false;
     private long attackDelayMS = 0L;
@@ -177,6 +176,7 @@ public class Aura extends Module {
     }
 
     private void stopBlock() {
+        ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
         PacketUtil.sendPacket(new C07PacketPlayerDigging(C07PacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN));
         mc.thePlayer.stopUsingItem();
         this.blockingState = false;
@@ -337,7 +337,7 @@ public class Aura extends Module {
         this.pitch = new ModeValue("Pitch Mode", 2, new String[]{"Linear", "SmoothLinear", "EIO", "PhysicalSimulation", "SkewedUnimodal", "SimpleNeuralNetwork"}, () -> this.rotations.getValue() == 4);
         this.fov = new IntValue("FOV", 360, 30, 360);
         this.autoBlock = new ModeValue(
-                "AutoBlock Mode", 4, new String[]{"NONE", "Vanilla", "Fake", "BlinkLess", "Prediction", "Safe"}
+                "AutoBlock Mode", 3, new String[]{"NONE", "Vanilla", "Fake", "Prediction"}
         );
         this.autoBlockRequirePress = new BooleanValue("AutoBlock Only Right Click", false, () -> this.autoBlock.getValue() != 0 && this.autoBlock.getValue() != 2);
         this.autoBlockCPS = new IntValue("AutoBlock CPS", 10, 1, 10);
@@ -381,11 +381,7 @@ public class Aura extends Module {
 
     public boolean shouldAutoBlock() {
         if (this.isPlayerBlocking() && this.isBlocking) {
-            return !mc.thePlayer.isInWater() && !mc.thePlayer.isInLava() && (this.autoBlock.getValue() == 3
-                    || this.autoBlock.getValue() == 4
-                    || this.autoBlock.getValue() == 5
-                    || this.autoBlock.getValue() == 6
-                    || this.autoBlock.getValue() == 7);
+            return !mc.thePlayer.isInWater() && !mc.thePlayer.isInLava() && (this.autoBlock.getValue() == 1 || this.autoBlock.getValue() == 3);
         } else {
             return false;
         }
@@ -474,95 +470,8 @@ public class Aura extends Module {
                             if (this.hasValidTarget()) {
                                 if (!Epilogue.playerStateManager.digging && !Epilogue.playerStateManager.placing) {
                                     switch (this.blockTick) {
-                                        case 0: {
-                                            this.setCurrentSlot();
-                                            if (!this.isPlayerBlocking()) {
-                                                swap = true;
-                                            }
-                                            blocked = true;
-                                            this.blockTick = 1;
-                                            break;
-                                        }
-                                        case 1: {
-                                            if (this.isPlayerBlocking()) {
-                                                this.stopBlock();
-                                            }
-                                            attack = false;
-                                            int emptySlot = this.findEmptySlot(Aura.mc.thePlayer.inventory.currentItem);
-                                            PacketUtil.sendPacket(new C09PacketHeldItemChange(emptySlot));
-                                            this.swapped = true;
-                                            if (this.attackDelayMS > 50L) break;
-                                            this.blockTick = 0;
-                                            break;
-                                        }
-                                        default: {
-                                            this.blockTick = 0;
-                                            this.setCurrentSlot();
-                                        }
-                                    }
-                                }
-                                this.isBlocking = true;
-                                this.fakeBlockState = true;
-                                break;
-                            }
-                            if (this.blockTick == 1 && this.isPlayerBlocking()) {
-                                this.stopBlock();
-                                this.setCurrentSlot();
-                            }
-                            this.blockTick = 0;
-                            Epilogue.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
-                            this.isBlocking = false;
-                            this.fakeBlockState = false;
-                            break;
-                        }
-                        case 4: {
-                            if (this.hasValidTarget()) {
-                                if (!Epilogue.playerStateManager.digging && !Epilogue.playerStateManager.placing) {
-                                    switch (this.blockTick) {
-                                        case 0: {
-                                            this.setCurrentSlot();
-                                            if (!this.isPlayerBlocking()) {
-                                                swap = true;
-                                            }
-                                            blocked = true;
-                                            this.blockTick = 1;
-                                            break;
-                                        }
-                                        case 1: {
-                                            if (this.isPlayerBlocking()) {
-                                                this.stopBlock();
-                                                attack = false;
-                                            }
-                                            if (this.attackDelayMS > 50L) break;
-                                            this.setNextSlot();
-                                            this.blockTick = 0;
-                                            break;
-                                        }
-                                        default: {
-                                            this.blockTick = 0;
-                                            this.setCurrentSlot();
-                                        }
-                                    }
-                                }
-                                this.isBlocking = true;
-                                this.fakeBlockState = true;
-                                break;
-                            }
-                            if (this.blockTick == 1 && this.isPlayerBlocking()) {
-                                this.stopBlock();
-                                this.setNextSlot();
-                            }
-                            this.blockTick = 0;
-                            this.setCurrentSlot();
-                            Epilogue.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
-                            this.isBlocking = false;
-                            this.fakeBlockState = false;
-                        }
-                        case 5: {
-                            if (this.hasValidTarget()) {
-                                if (!Epilogue.playerStateManager.digging && !Epilogue.playerStateManager.placing) {
-                                    switch (this.blockTick) {
                                         case 0:
+                                            this.setCurrentSlot();
                                             if (!this.isPlayerBlocking()) {
                                                 swap = true;
                                             }
@@ -570,29 +479,27 @@ public class Aura extends Module {
                                             this.blockTick = 1;
                                             break;
                                         case 1:
-                                            if (this.isPlayerBlocking()) {
-                                                if (Epilogue.moduleManager.modules.get(NoSlow.class).isEnabled()) {
-                                                    int randomSlot = new Random().nextInt(9);
-                                                    while (randomSlot == mc.thePlayer.inventory.currentItem) {
-                                                        randomSlot = new Random().nextInt(9);
-                                                    }
-                                                    PacketUtil.sendPacket(new C09PacketHeldItemChange(randomSlot));
-                                                    PacketUtil.sendPacket(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
-                                                }
-                                                this.stopBlock();
-                                                attack = false;
-                                            }
+                                            this.stopBlock();
+                                            attack = false;
+                                            this.setNextSlot();
                                             if (this.attackDelayMS <= 50L) {
                                                 this.blockTick = 0;
                                             }
                                             break;
                                         default:
                                             this.blockTick = 0;
+                                            this.setCurrentSlot();
                                     }
                                 }
                                 this.isBlocking = true;
                                 this.fakeBlockState = true;
                             } else {
+                                if (this.blockTick == 1 && this.isPlayerBlocking()) {
+                                    this.stopBlock();
+                                    this.setNextSlot();
+                                }
+                                this.blockTick = 0;
+                                this.setCurrentSlot();
                                 Epilogue.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
                                 this.isBlocking = false;
                                 this.fakeBlockState = false;
@@ -835,10 +742,16 @@ public class Aura extends Module {
     @Override
     public void onDisabled() {
         Epilogue.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
+        ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
+        if (this.blockingState || this.isBlocking || this.fakeBlockState || mc.thePlayer.isUsingItem()) {
+            this.stopBlock();
+        }
         this.blockingState = false;
         this.isBlocking = false;
         this.fakeBlockState = false;
         this.postTargetLostTicks = 0;
+        mc.thePlayer.stopUsingItem();
+        mc.thePlayer.clearItemInUse();
     }
 
     @Override
