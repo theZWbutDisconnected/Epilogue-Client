@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.shader.Framebuffer;
 import epilogue.module.Module;
 import epilogue.util.render.animations.advanced.Direction;
+
 import epilogue.value.values.BooleanValue;
 import epilogue.value.values.FloatValue;
 import epilogue.value.values.IntValue;
@@ -35,15 +36,16 @@ public class ArrayList extends Module {
     private float hotKeyHeaderWAnim = 0.0f;
     private float hotKeyHeaderWTarget = 0.0f;
 
-    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Normal", "HotKey"});
-    public final ModeValue animation = new ModeValue("Animation", 2, new String[]{"Scale In", "Move In", "Slide In"});
+    public final ModeValue mode = new ModeValue("Mode", 0, new String[]{"Normal", "HotKey", "Exhibition"});
+    public final ModeValue animation = new ModeValue("Animation", 2, new String[]{"Scale In", "Move In", "Slide In"}, () -> this.mode.getValue() != 2);
     public final ModeValue rectangleValue = new ModeValue("Rectangle", 1, new String[]{"None", "Top", "Side"}, () -> this.mode.getValue() == 0);
-    public final BooleanValue backgroundValue = new BooleanValue("Back Ground", true);
-    public final IntValue bgAlpha = new IntValue("Back Ground Alpha", 40, 1, 255);
+    public final BooleanValue backgroundValue = new BooleanValue("Back Ground", true, () -> this.mode.getValue() != 2);
+    public final IntValue bgAlpha = new IntValue("Back Ground Alpha", 40, 1, 255, () -> this.mode.getValue() != 2);
     public final IntValue round = new IntValue("Round", 0, 0, 12, () -> this.mode.getValue() == 0);
     public final FloatValue textHeight = new FloatValue("Text Height", 5f, 0f, 10f, () -> this.mode.getValue() == 0);
     public final FloatValue textOffset = new FloatValue("Text Offset", 2.5f, -6f, 6f, () -> this.mode.getValue() == 0);
-
+    public final BooleanValue normalTextShadow = new BooleanValue("Text Shadow", true, () -> this.mode.getValue() == 0);
+    public final BooleanValue exhiTextShadow = new BooleanValue("Text Shadow", true, () -> this.mode.getValue() == 2);
     public final ModeValue hotKeyIconStyle = new ModeValue("HotKey Icon", 0, new String[]{"Category", "Toggle"}, () -> this.mode.getValue() == 1);
     public final ModeValue hotKeyBgColor = new ModeValue("HotKey BG", 0, new String[]{"Dark", "Synced"}, () -> this.mode.getValue() == 1);
     public final BooleanValue hotKeyHeader = new BooleanValue("HotKey Header", false, () -> this.mode.getValue() == 1);
@@ -58,7 +60,7 @@ public class ArrayList extends Module {
     public final FloatValue hotKeyMiscIconOffsetX = new FloatValue("Misc Icon Offset X", 0.0f, -6.0f, 6.0f, () -> this.mode.getValue() == 1);
     public final BooleanValue hotKeyTextShadow = new BooleanValue("HotKey Text Shadow", true, () -> this.mode.getValue() == 1);
     public final BooleanValue hotKeyIconShadow = new BooleanValue("HotKey Icon Shadow", false, () -> this.mode.getValue() == 1);
-    public final BooleanValue bugGlow = new BooleanValue("Bug Glow", false);
+    public final BooleanValue bugGlow = new BooleanValue("Bug Glow", false, () -> this.mode.getValue() != 2);
 
     public ArrayList() {
         super("Arraylist", true);
@@ -86,7 +88,9 @@ public class ArrayList extends Module {
     public void renderAt(float x, float y) {
         ScaledResolution sr = new ScaledResolution(mc);
         if (!bugGlow.getValue()) {
-            if (mode.getValue() == 1) {
+            if (mode.getValue() == 2) {
+                exhibitionRender(sr, x, y);
+            } else if (mode.getValue() == 1) {
                 hotKeyRender(sr, x, y);
             } else {
                 moduleList(sr, x, y);
@@ -99,21 +103,91 @@ public class ArrayList extends Module {
         try {
             epilogue.util.render.PostProcessing.setInternalForcedPostProcessing(true);
             epilogue.util.render.PostProcessing.setInternalBloomSuppressed(false);
-            if (mode.getValue() == 1) {
+            if (mode.getValue() == 2) {
+                exhibitionRender(sr, x, y);
+            } else if (mode.getValue() == 1) {
                 hotKeyRender(sr, x, y);
             } else {
                 moduleList(sr, x, y);
             }
         } finally {
+
             epilogue.util.render.PostProcessing.setInternalForcedPostProcessing(prevForced);
             epilogue.util.render.PostProcessing.setInternalBloomSuppressed(prevSuppress);
         }
 
-        if (mode.getValue() == 1) {
+        if (mode.getValue() == 2) {
+            exhibitionRender(sr, x, y);
+        } else if (mode.getValue() == 1) {
             hotKeyRender(sr, x, y);
         } else {
             moduleList(sr, x, y);
         }
+    }
+
+    private int applyLightRainbowIfNeeded(epilogue.module.modules.render.Interface interfaceModule, int color) {
+        if (interfaceModule == null) return color;
+        if (!"Rainbow".equals(interfaceModule.colorMode.getModeString())) return color;
+        Color c = new Color(color, true);
+        float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+        int rgb = Color.HSBtoRGB(hsb[0], 0.5f, hsb[2]);
+        int a = c.getAlpha();
+        return (a << 24) | (rgb & 0x00FFFFFF);
+    }
+
+    private void exhibitionRender(ScaledResolution sr, float x, float y) {
+        epilogue.module.modules.render.Interface interfaceModule = (epilogue.module.modules.render.Interface) Epilogue.moduleManager.getModule("Interface");
+
+        Comparator<Module> sort = (m1, m2) -> {
+            int ab = mc.fontRendererObj.getStringWidth(m1.getName() + getFormattedTag(m1.getTag()));
+            int bb = mc.fontRendererObj.getStringWidth(m2.getName() + getFormattedTag(m2.getTag()));
+            return Integer.compare(bb, ab);
+        };
+
+        java.util.ArrayList<Module> enabledMods = new java.util.ArrayList<>(Epilogue.moduleManager.modules.values());
+        enabledMods.sort(sort);
+
+        float yValue = y;
+        float maxW = 0.0f;
+        float startY = y;
+
+        boolean alignRight = x >= (sr.getScaledWidth() / 2.0f);
+
+        for (Module module : enabledMods) {
+            if (module == null) continue;
+            if (!module.isEnabled()) continue;
+            if (module.isHidden()) continue;
+
+            String name = module.getName();
+            String tag = getFormattedTag(module.getTag());
+            String text = name + tag;
+
+            int base = interfaceModule != null ? interfaceModule.color((int) (yValue - startY)) : -1;
+            int color = applyLightRainbowIfNeeded(interfaceModule, base);
+
+            int w = mc.fontRendererObj.getStringWidth(text);
+            float drawX = alignRight ? (x - w) : x;
+
+            if (exhiTextShadow.getValue()) {
+                mc.fontRendererObj.drawStringWithShadow(name, drawX, yValue, color);
+                if (!tag.isEmpty()) {
+                    int nameW = mc.fontRendererObj.getStringWidth(name);
+                    mc.fontRendererObj.drawStringWithShadow(tag, drawX + nameW, yValue, 0xFF888888);
+                }
+            } else {
+                mc.fontRendererObj.drawString(name, (int) drawX, (int) yValue, color);
+                if (!tag.isEmpty()) {
+                    int nameW = mc.fontRendererObj.getStringWidth(name);
+                    mc.fontRendererObj.drawString(tag, (int) (drawX + nameW), (int) yValue, 0xFF888888);
+                }
+            }
+
+            maxW = Math.max(maxW, (float) w);
+            yValue += mc.fontRendererObj.FONT_HEIGHT + 1;
+        }
+
+        lastWidth = maxW;
+        lastHeight = Math.max(0.0f, yValue - startY);
     }
 
     public float getLastWidth() {
@@ -700,18 +774,32 @@ public class ArrayList extends Module {
                 String moduleTag = getFormattedTag(module.getTag());
 
                 if (interfaceModule != null) {
-                    FontRenderer.drawStringWithShadow(moduleName,
-                            textLeft,
-                            textTop,
-                            interfaceModule.color(count));
+                    if (normalTextShadow.getValue()) {
+                        FontRenderer.drawStringWithShadow(moduleName,
+                                textLeft,
+                                textTop,
+                                interfaceModule.color(count));
+                    } else {
+                        FontRenderer.drawString(moduleName,
+                                textLeft,
+                                textTop,
+                                interfaceModule.color(count));
+                    }
                 }
 
                 if (!moduleTag.isEmpty()) {
                     float nameWidth = FontRenderer.getStringWidth(moduleName);
-                    FontRenderer.drawStringWithShadow(moduleTag,
-                            textLeft + nameWidth,
-                            textTop,
-                            0xFF888888);
+                    if (normalTextShadow.getValue()) {
+                        FontRenderer.drawStringWithShadow(moduleTag,
+                                textLeft + nameWidth,
+                                textTop,
+                                0xFF888888);
+                    } else {
+                        FontRenderer.drawString(moduleTag,
+                                textLeft + nameWidth,
+                                textTop,
+                                0xFF888888);
+                    }
                 }
 
                 count -= 1;
@@ -933,18 +1021,32 @@ public class ArrayList extends Module {
                 String moduleName = module.getName();
                 String moduleTag = getFormattedTag(module.getTag());
 
-                FontRenderer.drawStringWithShadow(moduleName,
-                        textLeft,
-                        textTop,
-                        textcolor);
+                if (normalTextShadow.getValue()) {
+                    FontRenderer.drawStringWithShadow(moduleName,
+                            textLeft,
+                            textTop,
+                            textcolor);
+                } else {
+                    FontRenderer.drawString(moduleName,
+                            textLeft,
+                            textTop,
+                            textcolor);
+                }
 
                 if (!moduleTag.isEmpty()) {
                     float nameWidth = FontRenderer.getStringWidth(moduleName);
                     int tagColor = ColorUtil.swapAlpha(0xFF888888, alphaAnimation * 255);
-                    FontRenderer.drawStringWithShadow(moduleTag,
-                            textLeft + nameWidth,
-                            textTop,
-                            tagColor);
+                    if (normalTextShadow.getValue()) {
+                        FontRenderer.drawStringWithShadow(moduleTag,
+                                textLeft + nameWidth,
+                                textTop,
+                                tagColor);
+                    } else {
+                        FontRenderer.drawString(moduleTag,
+                                textLeft + nameWidth,
+                                textTop,
+                                tagColor);
+                    }
                 }
 
                 if (animation.getModeString().equals("Scale In")) {
